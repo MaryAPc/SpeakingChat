@@ -1,114 +1,147 @@
 package com.maryapc.speakingchat;
 
+import java.util.ArrayList;
+
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.util.Log;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatActivity;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.google.android.gms.auth.api.Auth;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.OptionalPendingResult;
-import com.google.android.gms.common.api.Scope;
+import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
+import com.maryapc.speakingchat.network.GoogleApiUrls;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
 import com.maryapc.speakingchat.view.ChatListView;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
-public class ChatListActivity extends MvpAppCompatActivity implements GoogleApiClient.OnConnectionFailedListener, View.OnClickListener, ChatListView {
+public class ChatListActivity extends MvpAppCompatActivity implements View.OnClickListener, ChatListView, ChatListAdapter.OnItemClickListener {
 
 	@InjectPresenter
 	ChatListPresenter mPresenter;
+	@BindView(R.id.activity_chat_list_button_connect_broadcast)
+	Button mConnectBroadcastButton;
+
+	@BindView(R.id.activity_chat_list_recycler_list)
+	RecyclerView mChatListRecyclerView;
+
+	@BindView(R.id.activity_chat_list_web_view)
+	WebView mWebView;
 
 	private static final String TAG = "ChatListActivity";
-	private static final int RC_GET_TOKEN = 1;
 
-	private GoogleApiClient mGoogleApiClient;
+	private static final String APP_PREFERENCES = "app_preferences";
+	private static final String SIGN_IN = "sign_in";
+	private static final String REFRESH_TOKEN = "refresh_token";
+	private static final String ACCESS_TOKEN = "access_token";
+	private static final String TOKEN_TYPE = "token_type";
+
+	private SharedPreferences mSharedPreferences;
+	private ChatListAdapter mChatListAdapter;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_chat_list);
+		ButterKnife.bind(this);
 
-		findViewById(R.id.activity_chat_list_button_sign_in).setOnClickListener(this);
-		findViewById(R.id.activity_chat_list_button_sign_out).setOnClickListener(this);
+		mConnectBroadcastButton.setOnClickListener(this);
+		mChatListAdapter = new ChatListAdapter(new ArrayList<>(), this);
+		mChatListRecyclerView.setAdapter(mChatListAdapter);
 
-		GoogleSignInOptions signInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-				.requestIdToken(getString(R.string.server_client_id))
-				.requestEmail()
-				.requestScopes(new Scope("https://www.googleapis.com/auth/youtube.readonly"))
-				.build();
+		mSharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+		ChatListPresenter.mRefreshToken = mSharedPreferences.getString(REFRESH_TOKEN, "");
+		ChatListPresenter.mAccessToken = mSharedPreferences.getString(ACCESS_TOKEN, "");
+		ChatListPresenter.mTokenType = mSharedPreferences.getString(TOKEN_TYPE, "");
 
-		mGoogleApiClient = new GoogleApiClient.Builder(this)
-				.enableAutoManage(this, this)
-				.addApi(Auth.GOOGLE_SIGN_IN_API, signInOptions)
-				.build();
-	}
-
-
-	private void refreshIdToken() {
-		OptionalPendingResult<GoogleSignInResult> pendingResult =
-				Auth.GoogleSignInApi.silentSignIn(mGoogleApiClient);
-		if (pendingResult.isDone()) {
-			GoogleSignInResult result = pendingResult.get();
-			handleSignInResult(result);
-		} else {
-			pendingResult.setResultCallback(this::handleSignInResult);
+		if (mSharedPreferences.getBoolean(SIGN_IN, false)) { //вход выполнен
+			mPresenter.visibleSignIn(true);
+			mPresenter.checkToken();
+		} else { //выполняем вход
+			mPresenter.visibleSignIn(false);
 		}
-	}
-
-	private void handleSignInResult(GoogleSignInResult result) {
-		if (result.isSuccess()) {
-			String idToken = result.getSignInAccount().getIdToken();
-		}
-	}
-
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		super.onActivityResult(requestCode, resultCode, data);
-
-		if (requestCode == RC_GET_TOKEN) {
-			GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
-			Log.d(TAG, "onActivityResult:GET_TOKEN:success:" + result.getStatus().isSuccess());
-
-			if (result.isSuccess()) {
-				String idToken = result.getSignInAccount().getIdToken();
-				// TODO(developer): send token to server and validate
-			}
-			handleSignInResult(result);
-		}
-	}
-
-	@Override
-	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-		Log.d(TAG, "onConnectionFailed:" + connectionResult);
 	}
 
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
-			case R.id.activity_chat_list_button_sign_in:
-				mPresenter.signIn(mGoogleApiClient);
-				break;
-			case R.id.activity_chat_list_button_sign_out:
-				mPresenter.signOut(mGoogleApiClient);
+			case R.id.activity_chat_list_button_connect_broadcast:
+				mPresenter.getLifeBroadcast();
 				break;
 		}
 	}
 
 	@Override
-	public void showAuth(GoogleApiClient apiClient) {
-		Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(apiClient);
-		startActivityForResult(signInIntent, RC_GET_TOKEN);
+	public void showEmptyBroadcast() {
+		Toast.makeText(this, R.string.empty_list_broadcast, Toast.LENGTH_LONG).show();
 	}
 
 	@Override
-	public void showSignInfo() {
-		Toast.makeText(this, R.string.signed_out, Toast.LENGTH_SHORT).show();
+	public void setVisibleSignIn(boolean isSignIn) {
+		if (isSignIn) {
+			mWebView.setVisibility(View.GONE);
+		} else {
+			mChatListRecyclerView.setVisibility(View.GONE);
+			mConnectBroadcastButton.setVisibility(View.GONE);
+			mWebView.setVisibility(View.VISIBLE);
+			mWebView.getSettings().setJavaScriptEnabled(true);
+			mWebView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+			mWebView.loadUrl(GoogleApiUrls.getSignInUrl());
+			mWebView.setWebViewClient(new WebViewClient() {
+				@Override
+				public void onPageFinished(WebView view, String url) {
+					String cod = view.getTitle();
+					if (cod.split("=")[0].equals("Success code")) {
+						Intent temp = new Intent(view.getContext(), Auth.class);
+						mWebView.setVisibility(View.INVISIBLE);
+						String authCode = cod.split("=")[1];
+						setResult(RESULT_OK, temp);
+						mSharedPreferences.edit().putBoolean(SIGN_IN, true).apply();
+						mPresenter.getAccessToken(authCode);
+						mConnectBroadcastButton.setVisibility(View.VISIBLE);
+						mChatListRecyclerView.setVisibility(View.VISIBLE);
+						mWebView.setVisibility(View.GONE);
+					} else {
+						mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
+					}
+				}
+			});
+		}
+	}
+
+	@Override
+	public void saveTokens(String refreshToken, String accessToken, String tokenType) {
+		mSharedPreferences.edit()
+				.putString(REFRESH_TOKEN, refreshToken)
+				.putString(ACCESS_TOKEN, accessToken)
+				.putString(TOKEN_TYPE, tokenType)
+				.apply();
+	}
+
+	@Override
+	public void saveAccessToken(String accessToken) {
+		mSharedPreferences.edit()
+				.putString(ACCESS_TOKEN, accessToken)
+				.apply();
+	}
+
+	@Override
+	public void showError() {
+		Toast.makeText(this, R.string.error_connect, Toast.LENGTH_LONG).show();
+	}
+
+	@Override
+	public void onItemClick(View view, int position) {
+
 	}
 }

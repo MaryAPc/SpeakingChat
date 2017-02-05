@@ -3,27 +3,25 @@ package com.maryapc.speakingchat.model.brooadcast;
 import java.util.List;
 
 import com.google.gson.annotations.SerializedName;
-import com.maryapc.speakingchat.model.chat.Items;
 
 public class BroadcastResponse {
 
-
 	@SerializedName("kind")
-	private String kind;
+	private String mKind;
 	@SerializedName("etag")
-	private String etag;
+	private String mEtag;
 	@SerializedName("items")
-	private List<Items> items;
+	private List<ItemsBroadcast> mItems;
 
 	public String getKind() {
-		return kind;
+		return mKind;
 	}
 
 	public String getEtag() {
-		return etag;
+		return mEtag;
 	}
 
-	public List<Items> getItems() {
-		return items;
+	public List<ItemsBroadcast> getItems() {
+		return mItems;
 	}
 }

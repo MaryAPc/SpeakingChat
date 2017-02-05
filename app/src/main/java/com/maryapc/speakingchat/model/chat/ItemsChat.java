@@ -2,51 +2,51 @@ package com.maryapc.speakingchat.model.chat;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Items {
+public class ItemsChat {
 
 	@SerializedName("kind")
-	private String kind;
+	private String mKind;
 	@SerializedName("snippet")
-	private Snippet snippet;
+	private Snippet mSnippet;
 	@SerializedName("authorDetails")
-	private AuthorDetails authorDetails;
+	private AuthorDetails mAuthorDetails;
 
 	public String getKind() {
-		return kind;
+		return mKind;
 	}
 
 	public Snippet getSnippet() {
-		return snippet;
+		return mSnippet;
 	}
 
 	public AuthorDetails getAuthorDetails() {
-		return authorDetails;
+		return mAuthorDetails;
 	}
 
 	public static class TextMessageDetails {
 		@SerializedName("messageText")
-		private String messageText;
+		private String mMessageText;
 
 		public String getMessageText() {
-			return messageText;
+			return mMessageText;
 		}
 	}
 
 	public static class Snippet {
 		@SerializedName("textMessageDetails")
-		private TextMessageDetails textMessageDetails;
+		private TextMessageDetails mTextMessageDetails;
 
 		public TextMessageDetails getTextMessageDetails() {
-			return textMessageDetails;
+			return mTextMessageDetails;
 		}
 	}
 
 	public static class AuthorDetails {
 		@SerializedName("displayName")
-		private String displayName;
+		private String mDisplayName;
 
 		public String getDisplayName() {
-			return displayName;
+			return mDisplayName;
 		}
 	}
 }

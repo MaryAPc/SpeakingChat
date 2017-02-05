@@ -8,5 +8,9 @@
 	<string name="sign_out">Sign Out</string>
 	<string name="disconnect">Disconnect</string>
 	<string name="refresh_token">Get Fresh Token</string>
-	<string name="server_client_id">KEY</string>
+	<string name="empty_list_broadcast">Не обнаружено прямых трансляций</string>
+	<string name="connect_to_broadcast">Подключиться к трансляции</string>
+	<string name="error_connect">Ошибка подключения</string>
+
+	<string name="android_client_id">ID</string>
 </resources>

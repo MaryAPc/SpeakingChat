@@ -7,36 +7,36 @@ import com.google.gson.annotations.SerializedName;
 public class ChatResponse {
 
 	@SerializedName("nextPageToken")
-	private String nextPageToken;
+	private String mNextPageToken;
 	@SerializedName("pageInfo")
-	private PageInfo pageInfo;
+	private PageInfo mPageInfo;
 	@SerializedName("items")
-	private List<Items> items;
+	private List<ItemsChat> mItemsChat;
 
 	public String getNextPageToken() {
-		return nextPageToken;
+		return mNextPageToken;
 	}
 
 	public PageInfo getPageInfo() {
-		return pageInfo;
+		return mPageInfo;
 	}
 
-	public List<Items> getItems() {
-		return items;
+	public List<ItemsChat> getItems() {
+		return mItemsChat;
 	}
 
 	public static class PageInfo {
 		@SerializedName("totalResults")
-		private String totalResults;
+		private String mTotalResults;
 		@SerializedName("resultsPerPage")
-		private String resultsPerPage;
+		private String mResultsPerPage;
 
 		public String getTotalResults() {
-			return totalResults;
+			return mTotalResults;
 		}
 
 		public String getResultsPerPage() {
-			return resultsPerPage;
+			return mResultsPerPage;
 		}
 	}
 }

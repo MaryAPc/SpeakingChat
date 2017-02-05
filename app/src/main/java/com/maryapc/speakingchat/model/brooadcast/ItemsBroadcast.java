@@ -2,45 +2,46 @@ package com.maryapc.speakingchat.model.brooadcast;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Items {
+public class ItemsBroadcast {
 
 	@SerializedName("kind")
-	private String kind;
+	private String mKind;
 	@SerializedName("id")
-	private String id;
+	private String mIdBroadcast;
 	@SerializedName("snippet")
-	private Snippet snippet;
+	private Snippet mSnippet;
 
 	public String getKind() {
-		return kind;
+		return mKind;
 	}
 
+	//id трансляции
 	public String getId() {
-		return id;
+		return mIdBroadcast;
 	}
 
 	public Snippet getSnippet() {
-		return snippet;
+		return mSnippet;
 	}
 
 	public static class Snippet {
 		@SerializedName("channelId")
-		private String channelId;
+		private String mChannelId;
 		@SerializedName("title")
-		private String title;
+		private String mTitle;
 		@SerializedName("liveChatId")
-		private String liveChatId;
+		private String mLiveChatId;
 
 		public String getChannelId() {
-			return channelId;
+			return mChannelId;
 		}
 
 		public String getTitle() {
-			return title;
+			return mTitle;
 		}
 
 		public String getLiveChatId() {
-			return liveChatId;
+			return mLiveChatId;
 		}
 	}
 }

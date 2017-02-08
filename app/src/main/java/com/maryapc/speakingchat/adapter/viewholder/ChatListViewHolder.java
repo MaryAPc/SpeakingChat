@@ -24,7 +24,7 @@ public class ChatListViewHolder extends RecyclerView.ViewHolder{
 	}
 
 	public void bind(ItemsChat model) {
-		mUsernameTextView.setText(model.getSnippet().getTextMessageDetails().getMessageText());
-		mMessageTextView.setText(model.getAuthorDetails().getDisplayName());
+		mMessageTextView.setText(model.getSnippet().getTextMessageDetails().getMessageText());
+		mUsernameTextView.setText(model.getAuthorDetails().getDisplayName());
 	}
 }

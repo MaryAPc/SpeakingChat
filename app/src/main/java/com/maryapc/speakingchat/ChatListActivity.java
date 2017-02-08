@@ -1,11 +1,13 @@
 package com.maryapc.speakingchat;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.webkit.WebSettings;
@@ -18,6 +20,7 @@ import com.arellomobile.mvp.MvpAppCompatActivity;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.google.android.gms.auth.api.Auth;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
+import com.maryapc.speakingchat.model.chat.ItemsChat;
 import com.maryapc.speakingchat.network.GoogleApiUrls;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
 import com.maryapc.speakingchat.view.ChatListView;
@@ -48,6 +51,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	private SharedPreferences mSharedPreferences;
 	private ChatListAdapter mChatListAdapter;
+	private LinearLayoutManager mLayoutManager;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -57,6 +61,8 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 		mConnectBroadcastButton.setOnClickListener(this);
 		mChatListAdapter = new ChatListAdapter(new ArrayList<>(), this);
+		mLayoutManager = new LinearLayoutManager(this);
+		mChatListRecyclerView.setLayoutManager(mLayoutManager);
 		mChatListRecyclerView.setAdapter(mChatListAdapter);
 
 		mSharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
@@ -138,6 +144,23 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@Override
 	public void showError() {
 		Toast.makeText(this, R.string.error_connect, Toast.LENGTH_LONG).show();
+	}
+
+	@Override
+	public void setChatMessages(List<ItemsChat> itemsChat) {
+		mChatListAdapter.setCollection(itemsChat);
+	}
+
+	@Override
+	public void showConnectInfo(String titleBroadcast) {
+		Toast.makeText(this, getString(R.string.connect_to_broadcast_info) + titleBroadcast, Toast.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void addMessages(List<ItemsChat> items, String nextPageToken) {
+		mChatListAdapter.addItems(items);
+		mLayoutManager.scrollToPosition(mChatListAdapter.getItemCount() - 1);
+		mPresenter.getNextChatMessages(nextPageToken);
 	}
 
 	@Override

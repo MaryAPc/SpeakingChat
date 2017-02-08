@@ -2,6 +2,7 @@ package com.maryapc.speakingchat.presenter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import android.util.Log;
 
@@ -37,12 +38,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	private Subscription mSubscriptionBroadast;
 	private Subscription mSubscriptionChat;
+	private Subscription mSubscriptionNewMessages;
 
-	private String mLifeChatId = "";
-
+	private static String mLifeChatId = "";
 	public static String mAccessToken = "";
 	public static String mRefreshToken = "";
 	public static String mTokenType = "";
+
 
 	public void visibleSignIn(boolean isSignIn) {
 		getViewState().setVisibleSignIn(isSignIn);
@@ -53,22 +55,20 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		responseCall.enqueue(new retrofit2.Callback<TokenResponse>() {
 			@Override
 			public void onResponse(Call<TokenResponse> call, retrofit2.Response<TokenResponse> response) {
-				if (response.body().getError() == null) {
+				if (response.isSuccessful()) {
 					getLifeBroadcast();
 				} else { //невалидный токен
-					Log.d("check_token", response.body().getError());
-					getNewAccessToken();
+					getNewAccessToken(false);
 				}
 			}
 
 			@Override
 			public void onFailure(Call<TokenResponse> call, Throwable t) {
-
 			}
 		});
 	}
 
-	private void getNewAccessToken() {
+	private void getNewAccessToken(boolean isRunBroadcast) {
 		OkHttpClient client = new OkHttpClient();
 		RequestBody requestBody = new FormEncodingBuilder()
 				.add("refresh_token", mRefreshToken)
@@ -94,8 +94,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mAccessToken = jsonObject.get("access_token").toString();
 					mTokenType = jsonObject.get("token_type").toString();
 					getViewState().saveAccessToken(mAccessToken);
-					getLifeBroadcast();
-					Log.d("tag", message);
+					if (!isRunBroadcast) {
+						getLifeBroadcast();
+					}
+					Log.d("tag", message + "new token");
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -143,36 +145,78 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public void getLifeBroadcast() {
 		mSubscriptionBroadast = requestBroadcast()
 				.subscribeOn(Schedulers.io())
+				.retry(2)
 				.map(BroadcastResponse::getItems)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<List<ItemsBroadcast>>() {
+					boolean isEmptyBroadcast;
+					String titleBroadcast = "";
+
 					@Override
 					public void onCompleted() {
-						//getLifeChat(mLifeChatId);
+						if (!isEmptyBroadcast) {
+							getViewState().showConnectInfo(titleBroadcast);
+							getLifeChat(mLifeChatId);
+						}
 					}
 
 					@Override
 					public void onError(Throwable e) {
 						//обработать невалидный токен
-						getNewAccessToken();
+						getNewAccessToken(false);
+						Log.d("presenter", "getLifeBroadcast");
 					}
 
 					@Override
 					public void onNext(List<ItemsBroadcast> itemses) {
 						if (itemses.size() == 0) {
 							getViewState().showEmptyBroadcast();
+							isEmptyBroadcast = true;
+						} else {
+							isEmptyBroadcast = false;
+							mLifeChatId = itemses.get(0).getSnippet().getLiveChatId();
+							titleBroadcast = itemses.get(0).getSnippet().getTitle();
 						}
-						//mLifeChatId = itemses.get(0).getSnippet().getLiveChatId();
 					}
 				});
 
 	}
 
-	private void getLifeChat(String lifeChatId) {
+	public void getLifeChat(String lifeChatId) {
 		mSubscriptionChat = requestChat(lifeChatId)
 				.subscribeOn(Schedulers.io())
-				.subscribeOn(AndroidSchedulers.mainThread())
+				.retry(2)
+				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
+					String nextPageToken = "";
+
+					@Override
+					public void onCompleted() {
+						getNextChatMessages(nextPageToken);
+					}
+
+					@Override
+					public void onError(Throwable e) {
+						getNewAccessToken(false);
+						Log.d("presenter", "getLifeChat");
+					}
+
+					@Override
+					public void onNext(ChatResponse chatResponse) {
+						nextPageToken = chatResponse.getNextPageToken();
+						getViewState().setChatMessages(chatResponse.getItems());
+					}
+				});
+	}
+
+	public void getNextChatMessages(String nextPageToken) {
+		mSubscriptionNewMessages = requestNextMessages(nextPageToken)
+				.subscribeOn(Schedulers.io())
+				.timeout(5, TimeUnit.SECONDS)
+				.retry(2)
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(new Subscriber<ChatResponse>() {
+					String nextPageToken = "";
 					@Override
 					public void onCompleted() {
 
@@ -180,12 +224,14 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 					@Override
 					public void onError(Throwable e) {
-						e.printStackTrace();
+						getNewAccessToken(true);
+						Log.d("presenter", "error getNextChatMessages");
 					}
 
 					@Override
 					public void onNext(ChatResponse chatResponse) {
-						chatResponse.getItems();
+						nextPageToken = chatResponse.getNextPageToken();
+						getViewState().addMessages(chatResponse.getItems(), nextPageToken);
 					}
 				});
 	}
@@ -196,5 +242,9 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	private Observable<ChatResponse> requestChat(String lifeChatId) {
 		return RetrofitService.getInstance().createApi().getChat(mTokenType + " " + mAccessToken, lifeChatId, "snippet, authorDetails");
+	}
+
+	private Observable<ChatResponse> requestNextMessages(String nextPageToken) {
+		return RetrofitService.getInstance().createApi().getNextChatMessage(mTokenType + " " + mAccessToken, mLifeChatId, "snippet, authorDetails", nextPageToken);
 	}
 }

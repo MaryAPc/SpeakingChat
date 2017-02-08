@@ -13,4 +13,5 @@
 	<string name="error_connect">Ошибка подключения</string>
 
 	<string name="android_client_id">ID</string>
+	<string name="connect_to_broadcast_info">"Подключение к трансляции: "</string>
 </resources>

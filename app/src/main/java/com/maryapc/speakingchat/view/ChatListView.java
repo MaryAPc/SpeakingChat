@@ -1,8 +1,11 @@
 package com.maryapc.speakingchat.view;
 
+import java.util.List;
+
 import com.arellomobile.mvp.MvpView;
 import com.arellomobile.mvp.viewstate.strategy.AddToEndSingleStrategy;
 import com.arellomobile.mvp.viewstate.strategy.StateStrategyType;
+import com.maryapc.speakingchat.model.chat.ItemsChat;
 
 @StateStrategyType(AddToEndSingleStrategy.class)
 public interface ChatListView extends MvpView{
@@ -16,4 +19,10 @@ public interface ChatListView extends MvpView{
 	void saveAccessToken(String accessToken);
 
 	void showError();
+
+	void setChatMessages(List<ItemsChat> itemsChat);
+
+	void showConnectInfo(String titleBroadcast);
+
+	void addMessages(List<ItemsChat> items, String nextPageToken);
 }

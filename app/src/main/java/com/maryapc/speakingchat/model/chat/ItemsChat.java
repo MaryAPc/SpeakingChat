@@ -24,7 +24,7 @@ public class ItemsChat {
 	}
 
 	public static class TextMessageDetails {
-		@SerializedName("messageText")
+		@SerializedName("messageText") //сообщение
 		private String mMessageText;
 
 		public String getMessageText() {
@@ -42,7 +42,7 @@ public class ItemsChat {
 	}
 
 	public static class AuthorDetails {
-		@SerializedName("displayName")
+		@SerializedName("displayName") //Username
 		private String mDisplayName;
 
 		public String getDisplayName() {

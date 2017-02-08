@@ -25,11 +25,11 @@ public class ItemsBroadcast {
 	}
 
 	public static class Snippet {
-		@SerializedName("channelId")
+		@SerializedName("channelId") //id канала
 		private String mChannelId;
-		@SerializedName("title")
+		@SerializedName("title") //название трансляции
 		private String mTitle;
-		@SerializedName("liveChatId")
+		@SerializedName("liveChatId") //id чата (для запроса)
 		private String mLiveChatId;
 
 		public String getChannelId() {

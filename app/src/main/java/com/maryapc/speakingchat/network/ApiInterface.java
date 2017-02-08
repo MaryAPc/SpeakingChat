@@ -18,6 +18,9 @@ public interface ApiInterface {
 	@GET(GoogleApiUrls.Youtube.CHAT)
 	Observable<ChatResponse> getChat(@Header("Authorization") String token, @Query("liveChatId") String liveChatId, @Query("part") String part);
 
+	@GET(GoogleApiUrls.Youtube.CHAT)
+	Observable<ChatResponse> getNextChatMessage(@Header("Authorization") String token, @Query("liveChatId") String liveChatId, @Query("part") String part, @Query("pageToken") String nextPageToken);
+
 	@GET(GoogleApiUrls.OAuth.TOKEN_INFO_URL)
 	Call<TokenResponse> getTokenInfo(@Query("access_token") String accessToken);
 }

@@ -25,4 +25,16 @@ public interface ChatListView extends MvpView{
 	void showConnectInfo(String titleBroadcast);
 
 	void addMessages(List<ItemsChat> items, String nextPageToken);
+
+	void showSpeechBar();
+
+	void enableButton(int idButton);
+
+	void switchOfButton(int idButton);
+
+	void startLifeBroadcast();
+
+	void startLifeChat(String lifeChatId);
+
+	void startGettingMessages(String nextPageToken);
 }

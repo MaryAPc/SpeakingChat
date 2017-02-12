@@ -21,9 +21,9 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListViewHolder>{
 	private OnItemClickListener mOnItemClickListener;
 
 	public interface OnItemClickListener {
-
 		void onItemClick(View view, int position);
 	}
+
 	public ChatListAdapter(List<ItemsChat> chatList, OnItemClickListener clickListener) {
 		mChatList = chatList;
 		mOnItemClickListener = clickListener;
@@ -60,5 +60,9 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListViewHolder>{
 		int positionStart = mChatList.size() + 1;
 		mChatList.addAll(items);
 		notifyItemRangeInserted(positionStart, items.size());
+	}
+
+	public List<ItemsChat> getChatList() {
+		return mChatList;
 	}
 }

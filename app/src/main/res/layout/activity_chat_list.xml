@@ -6,27 +6,68 @@
 	android:layout_height="match_parent"
 	android:orientation="vertical">
 
-	<Button
-		android:id="@+id/activity_chat_list_button_connect_broadcast"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:text="@string/connect_to_broadcast"
-		android:layout_gravity="center"
-		style="@android:style/Widget.Button"
-		android:layout_margin="@dimen/small_margin"
-		android:visibility="visible"/>
-
-	<android.support.v7.widget.RecyclerView
-		android:id="@+id/activity_chat_list_recycler_list"
+	<LinearLayout
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:layout_margin="@dimen/small_margin"
-		android:visibility="visible"/>
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:orientation="vertical">
+
+		<Button
+			android:id="@+id/activity_chat_list_button_speech"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="speech"
+			android:visibility="gone" />
+
+		<Button
+			android:id="@+id/activity_chat_list_button_connect_broadcast"
+			style="@android:style/Widget.Button"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center"
+			android:layout_margin="@dimen/small_margin"
+			android:text="@string/connect_to_broadcast"
+			android:visibility="visible" />
+
+		<android.support.v7.widget.RecyclerView
+			android:id="@+id/activity_chat_list_recycler_list"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:visibility="visible" />
+	</LinearLayout>
+
+	<LinearLayout
+		android:id="@+id/activity_chat_list_linear_layout_play_bar"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:orientation="horizontal"
+		android:visibility="gone"
+		tools:visibility="visible">
+
+		<Button
+			android:id="@+id/activity_chat_list_button_play"
+			style="@android:style/Widget.Button"
+			android:layout_width="70dp"
+			android:layout_height="40dp"
+			android:layout_marginRight="@dimen/small_margin"
+			android:text="Play" />
+
+		<Button
+			android:id="@+id/activity_chat_list_button_stop"
+			style="@android:style/Widget.Button"
+			android:layout_width="70dp"
+			android:layout_height="40dp"
+			android:layout_marginLeft="@dimen/small_margin"
+			android:text="Stop" />
+
+	</LinearLayout>
 
 	<WebView
 		android:id="@+id/activity_chat_list_web_view"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:visibility="gone"/>
+		android:visibility="gone" />
+
 
 </LinearLayout>

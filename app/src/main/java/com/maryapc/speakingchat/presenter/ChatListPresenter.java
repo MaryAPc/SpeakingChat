@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
 import com.maryapc.speakingchat.MyApplication;
 import com.maryapc.speakingchat.R;
+import com.maryapc.speakingchat.SpeakService;
+import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
 import com.maryapc.speakingchat.model.TokenResponse;
 import com.maryapc.speakingchat.model.brooadcast.BroadcastResponse;
 import com.maryapc.speakingchat.model.brooadcast.ItemsBroadcast;
@@ -39,12 +42,16 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	private Subscription mSubscriptionBroadast;
 	private Subscription mSubscriptionChat;
 	private Subscription mSubscriptionNewMessages;
+	private ChatListAdapter mAdapter;
 
 	private static String mLifeChatId = "";
 	public static String mAccessToken = "";
 	public static String mRefreshToken = "";
 	public static String mTokenType = "";
 
+	public static int mLastPlayPosition = 0;
+	public static boolean isSpeakNow = false;
+	private static int mItemCount;
 
 	public void visibleSignIn(boolean isSignIn) {
 		getViewState().setVisibleSignIn(isSignIn);
@@ -56,7 +63,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			@Override
 			public void onResponse(Call<TokenResponse> call, retrofit2.Response<TokenResponse> response) {
 				if (response.isSuccessful()) {
-					getLifeBroadcast();
+					getViewState().startLifeBroadcast();
 				} else { //невалидный токен
 					getNewAccessToken(false);
 				}
@@ -95,7 +102,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mTokenType = jsonObject.get("token_type").toString();
 					getViewState().saveAccessToken(mAccessToken);
 					if (!isRunBroadcast) {
-						getLifeBroadcast();
+						getViewState().startLifeBroadcast();
 					}
 					Log.d("tag", message + "new token");
 				} catch (JSONException e) {
@@ -133,7 +140,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mTokenType = jsonObject.get("token_type").toString();
 					mRefreshToken = jsonObject.get("refresh_token").toString();
 					getViewState().saveTokens(mRefreshToken, mAccessToken, mTokenType);
-					getLifeBroadcast();
+					getViewState().startLifeBroadcast();
 					Log.d("tag", message);
 				} catch (JSONException e) {
 					e.printStackTrace();
@@ -145,8 +152,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public void getLifeBroadcast() {
 		mSubscriptionBroadast = requestBroadcast()
 				.subscribeOn(Schedulers.io())
-				.retry(2)
 				.map(BroadcastResponse::getItems)
+				.doOnError(throwable -> {
+					throwable.printStackTrace();
+					Log.d("presenter", "DoError getLifeBroadcast");
+					getNewAccessToken(true);
+				})
+				.retry(1)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<List<ItemsBroadcast>>() {
 					boolean isEmptyBroadcast;
@@ -156,15 +168,15 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					public void onCompleted() {
 						if (!isEmptyBroadcast) {
 							getViewState().showConnectInfo(titleBroadcast);
-							getLifeChat(mLifeChatId);
+							getViewState().showSpeechBar();
+							getViewState().startLifeChat(mLifeChatId);
 						}
 					}
 
 					@Override
 					public void onError(Throwable e) {
-						//обработать невалидный токен
-						getNewAccessToken(false);
-						Log.d("presenter", "getLifeBroadcast");
+						Log.d("presenter", "Error getLifeBroadcast");
+						e.printStackTrace();
 					}
 
 					@Override
@@ -185,20 +197,24 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public void getLifeChat(String lifeChatId) {
 		mSubscriptionChat = requestChat(lifeChatId)
 				.subscribeOn(Schedulers.io())
-				.retry(2)
+				.doOnError(throwable -> {
+					throwable.printStackTrace();
+					Log.d("presenter", "DoError getLifeChat");
+					getNewAccessToken(true);
+				})
+				.retry(1)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
 					String nextPageToken = "";
 
 					@Override
 					public void onCompleted() {
-						getNextChatMessages(nextPageToken);
+						getViewState().startGettingMessages(nextPageToken);
 					}
 
 					@Override
 					public void onError(Throwable e) {
-						getNewAccessToken(false);
-						Log.d("presenter", "getLifeChat");
+						Log.d("presenter", "Error getLifeChat");
 					}
 
 					@Override
@@ -212,20 +228,25 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public void getNextChatMessages(String nextPageToken) {
 		mSubscriptionNewMessages = requestNextMessages(nextPageToken)
 				.subscribeOn(Schedulers.io())
-				.timeout(5, TimeUnit.SECONDS)
-				.retry(2)
+				.delay(2, TimeUnit.SECONDS)
+				.retry(1)
+				.doOnError(throwable -> {
+					throwable.printStackTrace();
+					Log.d("presenter", "DoError getNextChatMessages");
+					getNewAccessToken(true);
+				})
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
 					String nextPageToken = "";
+
 					@Override
 					public void onCompleted() {
-
+						//mItemCount = ChatListActivity.mChatListAdapter.getItemCount();
 					}
 
 					@Override
 					public void onError(Throwable e) {
-						getNewAccessToken(true);
-						Log.d("presenter", "error getNextChatMessages");
+						Log.d("presenter", "Error getNextChatMessages");
 					}
 
 					@Override
@@ -246,5 +267,23 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	private Observable<ChatResponse> requestNextMessages(String nextPageToken) {
 		return RetrofitService.getInstance().createApi().getNextChatMessage(mTokenType + " " + mAccessToken, mLifeChatId, "snippet, authorDetails", nextPageToken);
+	}
+
+	public void speech(TextToSpeech textToSpeech, int position, ChatListAdapter adapter) {
+		textToSpeech.stop();
+		if (SpeakService.mStatus == SpeakService.SpeechStatus.SPEAK) {
+			if (adapter.getItemCount() != 0) {
+				getViewState().enableButton(R.id.activity_chat_list_button_stop);
+				getViewState().switchOfButton(R.id.activity_chat_list_button_play);
+				SpeakService.speechMessages(textToSpeech, position, adapter);
+			}
+		}
+	}
+
+	public void stopSpeech(TextToSpeech textToSpeech) {
+		SpeakService.mStatus = SpeakService.SpeechStatus.NOT_SPEAK;
+		SpeakService.stopSpeech(textToSpeech);
+		getViewState().switchOfButton(R.id.activity_chat_list_button_stop);
+		getViewState().enableButton(R.id.activity_chat_list_button_play);
 	}
 }

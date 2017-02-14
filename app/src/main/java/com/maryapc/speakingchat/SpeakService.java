@@ -16,7 +16,7 @@ public class SpeakService {
 				textToSpeech.speak(regexMessage(adapter.getChatList().get(i).getAuthorDetails().getDisplayName()), TextToSpeech.QUEUE_ADD, null, "speech_id_name" + i);
 				textToSpeech.playSilentUtterance(5, TextToSpeech.QUEUE_ADD, "speech_id_silent_short" + i);
 				textToSpeech.speak(regexMessage(adapter.getChatList().get(i).getSnippet().getTextMessageDetails().getMessageText()), TextToSpeech.QUEUE_ADD, null, "speech_id_message" + i);
-				textToSpeech.playSilentUtterance(50, TextToSpeech.QUEUE_ADD, "speech_id_silent" + i);
+				textToSpeech.playSilentUtterance(7000, TextToSpeech.QUEUE_ADD, "speech_id_silent" + i);
 				ChatListPresenter.mLastPlayPosition = i;
 			}
 		}
@@ -27,7 +27,8 @@ public class SpeakService {
 	}
 
 	private static String regexMessage(String text) {
-		return text.replaceAll("(?u)[^(\\w)|(\\x7F-\\xFF)|(\\s)]", "");
+		String s = text.replaceAll("(?u)[^(а-яА-Яa-zA-Z0-9,.)|\\s]|[\\x21-\\x2B\\x2F]", "");
+		return s.replaceAll("([а-яa-zА-ЯA-Z])(\\1+)","$1");
 	}
 
 	public enum SpeechStatus {

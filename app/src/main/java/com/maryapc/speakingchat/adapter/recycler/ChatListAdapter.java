@@ -21,9 +21,9 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListViewHolder>{
 	private OnItemClickListener mOnItemClickListener;
 
 	public interface OnItemClickListener {
+
 		void onItemClick(View view, int position);
 	}
-
 	public ChatListAdapter(List<ItemsChat> chatList, OnItemClickListener clickListener) {
 		mChatList = chatList;
 		mOnItemClickListener = clickListener;
@@ -64,5 +64,10 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListViewHolder>{
 
 	public List<ItemsChat> getChatList() {
 		return mChatList;
+	}
+
+	public void clean() {
+		mChatList.clear();
+		notifyDataSetChanged();
 	}
 }

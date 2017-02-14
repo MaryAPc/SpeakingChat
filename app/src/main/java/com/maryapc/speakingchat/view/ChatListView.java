@@ -24,7 +24,7 @@ public interface ChatListView extends MvpView{
 
 	void showConnectInfo(String titleBroadcast);
 
-	void addMessages(List<ItemsChat> items, String nextPageToken);
+	void addMessages(List<ItemsChat> items);
 
 	void showSpeechBar();
 
@@ -37,4 +37,5 @@ public interface ChatListView extends MvpView{
 	void startLifeChat(String lifeChatId);
 
 	void startGettingMessages(String nextPageToken);
+
 }

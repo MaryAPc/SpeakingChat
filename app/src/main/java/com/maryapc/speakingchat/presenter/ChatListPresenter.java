@@ -39,10 +39,11 @@ import rx.schedulers.Schedulers;
 @InjectViewState
 public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
-	private Subscription mSubscriptionBroadast;
+	private static boolean FIRST_CONNECT = true;
+	private static String mNextPageToken = "";
+	private Subscription mSubscriptionBroadcast;
 	private Subscription mSubscriptionChat;
-	private Subscription mSubscriptionNewMessages;
-	private ChatListAdapter mAdapter;
+	public static Subscription mSubscriptionNewMessages;
 
 	private static String mLifeChatId = "";
 	public static String mAccessToken = "";
@@ -50,8 +51,6 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public static String mTokenType = "";
 
 	public static int mLastPlayPosition = 0;
-	public static boolean isSpeakNow = false;
-	private static int mItemCount;
 
 	public void visibleSignIn(boolean isSignIn) {
 		getViewState().setVisibleSignIn(isSignIn);
@@ -64,8 +63,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			public void onResponse(Call<TokenResponse> call, retrofit2.Response<TokenResponse> response) {
 				if (response.isSuccessful()) {
 					getViewState().startLifeBroadcast();
+					Log.e("tag", "check success");
 				} else { //невалидный токен
-					getNewAccessToken(false);
+					getNewAccessToken(true);
+					Log.e("tag", "check NOT success");
 				}
 			}
 
@@ -75,7 +76,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		});
 	}
 
-	private void getNewAccessToken(boolean isRunBroadcast) {
+	private void getNewAccessToken(boolean isNewConnect) {
 		OkHttpClient client = new OkHttpClient();
 		RequestBody requestBody = new FormEncodingBuilder()
 				.add("refresh_token", mRefreshToken)
@@ -101,8 +102,12 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mAccessToken = jsonObject.get("access_token").toString();
 					mTokenType = jsonObject.get("token_type").toString();
 					getViewState().saveAccessToken(mAccessToken);
-					if (!isRunBroadcast) {
+					if (isNewConnect) {
+						FIRST_CONNECT = true;
 						getViewState().startLifeBroadcast();
+					} else {
+						//mSubscriptionNewMessages.unsubscribe();
+						getViewState().startGettingMessages(mNextPageToken);
 					}
 					Log.d("tag", message + "new token");
 				} catch (JSONException e) {
@@ -150,15 +155,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	}
 
 	public void getLifeBroadcast() {
-		mSubscriptionBroadast = requestBroadcast()
+		mSubscriptionBroadcast = requestBroadcast()
 				.subscribeOn(Schedulers.io())
 				.map(BroadcastResponse::getItems)
 				.doOnError(throwable -> {
 					throwable.printStackTrace();
 					Log.d("presenter", "DoError getLifeBroadcast");
-					getNewAccessToken(true);
 				})
-				.retry(1)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<List<ItemsBroadcast>>() {
 					boolean isEmptyBroadcast;
@@ -167,7 +170,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					@Override
 					public void onCompleted() {
 						if (!isEmptyBroadcast) {
-							getViewState().showConnectInfo(titleBroadcast);
+							if (FIRST_CONNECT) {
+								FIRST_CONNECT = false;
+								getViewState().showConnectInfo(titleBroadcast);
+							}
 							getViewState().showSpeechBar();
 							getViewState().startLifeChat(mLifeChatId);
 						}
@@ -200,16 +206,12 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 				.doOnError(throwable -> {
 					throwable.printStackTrace();
 					Log.d("presenter", "DoError getLifeChat");
-					getNewAccessToken(true);
 				})
-				.retry(1)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
-					String nextPageToken = "";
-
 					@Override
 					public void onCompleted() {
-						getViewState().startGettingMessages(nextPageToken);
+						getViewState().startGettingMessages(mNextPageToken);
 					}
 
 					@Override
@@ -219,26 +221,19 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 					@Override
 					public void onNext(ChatResponse chatResponse) {
-						nextPageToken = chatResponse.getNextPageToken();
+						mNextPageToken = chatResponse.getNextPageToken();
 						getViewState().setChatMessages(chatResponse.getItems());
 					}
 				});
 	}
 
-	public void getNextChatMessages(String nextPageToken) {
-		mSubscriptionNewMessages = requestNextMessages(nextPageToken)
+	public void getNextChatMessages() {
+		mSubscriptionNewMessages = requestNextMessages(mNextPageToken)
 				.subscribeOn(Schedulers.io())
-				.delay(2, TimeUnit.SECONDS)
-				.retry(1)
-				.doOnError(throwable -> {
-					throwable.printStackTrace();
-					Log.d("presenter", "DoError getNextChatMessages");
-					getNewAccessToken(true);
-				})
+				.delay(1, TimeUnit.SECONDS)
+				.timeout(10, TimeUnit.SECONDS)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
-					String nextPageToken = "";
-
 					@Override
 					public void onCompleted() {
 						//mItemCount = ChatListActivity.mChatListAdapter.getItemCount();
@@ -246,13 +241,15 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 					@Override
 					public void onError(Throwable e) {
+						e.printStackTrace();
+						getNewAccessToken(false);
 						Log.d("presenter", "Error getNextChatMessages");
 					}
 
 					@Override
 					public void onNext(ChatResponse chatResponse) {
-						nextPageToken = chatResponse.getNextPageToken();
-						getViewState().addMessages(chatResponse.getItems(), nextPageToken);
+						mNextPageToken = chatResponse.getNextPageToken();
+						getViewState().addMessages(chatResponse.getItems());
 					}
 				});
 	}
@@ -285,5 +282,16 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		SpeakService.stopSpeech(textToSpeech);
 		getViewState().switchOfButton(R.id.activity_chat_list_button_stop);
 		getViewState().enableButton(R.id.activity_chat_list_button_play);
+	}
+
+	public void unsubscribeAll() {
+		FIRST_CONNECT = true;
+		if (mSubscriptionBroadcast != null) {
+			mSubscriptionBroadcast.unsubscribe();
+		} else if (mSubscriptionNewMessages != null) {
+			mSubscriptionNewMessages.unsubscribe();
+		} else if (mSubscriptionChat != null) {
+			mSubscriptionChat.unsubscribe();
+		}
 	}
 }

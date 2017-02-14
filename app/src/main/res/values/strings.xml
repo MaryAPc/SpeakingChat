@@ -1,12 +1,5 @@
 <resources>
 	<string name="app_name">Speaking Chat</string>
-	<string name="signed_in_fmt">Signed in as: %s</string>
-	<string name="signed_in">Signed in</string>
-	<string name="signing_in">Signing in…</string>
-	<string name="signed_out">Signed out</string>
-	<string name="signed_in_err">"Error: please check logs."</string>
-	<string name="sign_out">Sign Out</string>
-	<string name="disconnect">Disconnect</string>
 	<string name="refresh_token">Get Fresh Token</string>
 	<string name="empty_list_broadcast">Не обнаружено прямых трансляций</string>
 	<string name="connect_to_broadcast">Подключиться к трансляции</string>
@@ -14,4 +7,5 @@
 
 	<string name="android_client_id">ID</string>
 	<string name="connect_to_broadcast_info">"Подключение к трансляции: "</string>
+	<string name="sign_out">Выйти</string>
 </resources>

@@ -294,4 +294,14 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			mSubscriptionChat.unsubscribe();
 		}
 	}
+
+	public void setNewInterval(long interval) {
+		if (interval != 0) {
+			SpeakService.mInterval = interval;
+		}
+	}
+
+	public void startSettingsActivity() {
+		getViewState().showSettings();
+	}
 }

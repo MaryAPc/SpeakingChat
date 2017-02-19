@@ -14,9 +14,9 @@
 
 		<Button
 			android:id="@+id/activity_chat_list_button_connect_broadcast"
-			style="@android:style/Widget.Button"
+			style="@style/ThemeButton"
 			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
+			android:layout_height="40dp"
 			android:layout_gravity="center"
 			android:layout_margin="@dimen/small_margin"
 			android:text="@string/connect_to_broadcast"
@@ -33,27 +33,30 @@
 		android:id="@+id/activity_chat_list_linear_layout_play_bar"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
+		android:layout_marginBottom="6dp"
+		android:layout_marginTop="6dp"
 		android:gravity="center"
 		android:orientation="horizontal"
 		android:visibility="gone"
-		tools:visibility="visible"
-		android:layout_marginTop="6dp">
+		tools:visibility="visible">
 
-		<Button
+		<ImageButton
 			android:id="@+id/activity_chat_list_button_play"
-			style="@android:style/Widget.Button"
+			style="@style/ThemeButton"
 			android:layout_width="70dp"
-			android:layout_height="40dp"
+			android:layout_height="35dp"
 			android:layout_marginRight="@dimen/small_margin"
-			android:text="Play" />
+			android:src="@drawable/ic_play_arrow_black_36dp"
+			android:tint="@color/dark_grey" />
 
-		<Button
+		<ImageButton
 			android:id="@+id/activity_chat_list_button_stop"
-			style="@android:style/Widget.Button"
+			style="@style/ThemeButton"
 			android:layout_width="70dp"
-			android:layout_height="40dp"
+			android:layout_height="35dp"
 			android:layout_marginLeft="@dimen/small_margin"
-			android:text="Stop" />
+			android:src="@drawable/ic_stop_black_36dp"
+			android:tint="@color/dark_grey" />
 
 	</LinearLayout>
 

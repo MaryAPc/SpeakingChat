@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.NonNull;
@@ -22,6 +23,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -61,14 +63,15 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	LinearLayout mSpeechBar;
 
 	@BindView(R.id.activity_chat_list_button_play)
-	Button mPlayButton;
+	ImageButton mPlayButton;
 
 	@BindView(R.id.activity_chat_list_button_stop)
-	Button mStopButton;
+	ImageButton mStopButton;
 
 	private static boolean LAST_MESSAGE_DONE = false;
 	private static final String TAG = "ChatListActivity";
 	private static final String APP_PREFERENCES = "app_preferences";
+	private static final String PREFERENCES_SILENT = "silent_interval";
 	private static final String SIGN_IN = "sign_in";
 	private static final String REFRESH_TOKEN = "refresh_token";
 	private static final String ACCESS_TOKEN = "access_token";
@@ -82,6 +85,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	private GoogleApiClient mGoogleApiClient;
 
 	private boolean isStopScroll;
+	private SharedPreferences mDefaultPreferences;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -98,7 +102,10 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		mTextToSpeech = new TextToSpeech(this, this);
 		mChatListRecyclerView.setLayoutManager(mLayoutManager);
 		mChatListRecyclerView.setAdapter(mChatListAdapter);
+
 		mSharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+		mDefaultPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
 		ChatListPresenter.mRefreshToken = mSharedPreferences.getString(REFRESH_TOKEN, "");
 		ChatListPresenter.mAccessToken = mSharedPreferences.getString(ACCESS_TOKEN, "");
 		ChatListPresenter.mTokenType = mSharedPreferences.getString(TOKEN_TYPE, "");
@@ -179,9 +186,18 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				mSpeechBar.setVisibility(View.GONE);
 				signOut();
 				return true;
+			case R.id.main_menu_preferences:
+				mPresenter.stopSpeech(mTextToSpeech);
+				mPresenter.startSettingsActivity();
+				return true;
 			default:
 				return super.onOptionsItemSelected(item);
 		}
+	}
+	@Override
+	protected void onResume() {
+		super.onResume();
+		mPresenter.setNewInterval(Long.parseLong(mDefaultPreferences.getString(PREFERENCES_SILENT, "7")));
 	}
 
 	@Override
@@ -341,6 +357,12 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
+	public void showSettings() {
+		Intent intent = new Intent(this, ChatPreferences.class);
+		startActivity(intent);
+	}
+
+	@Override
 	public void onItemClick(View view, int position) {
 		SpeakService.mStatus = SpeakService.SpeechStatus.SPEAK;
 		mPresenter.speech(mTextToSpeech, position, mChatListAdapter);
@@ -361,5 +383,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
-	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {}
+	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+	}
 }

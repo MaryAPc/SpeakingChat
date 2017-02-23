@@ -1,6 +1,8 @@
 package com.maryapc.speakingchat.presenter;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import retrofit2.Call;
+import retrofit2.adapter.rxjava.HttpException;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
@@ -51,6 +54,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public static String mTokenType = "";
 
 	public static int mLastPlayPosition = 0;
+	private int mPollingInterval;
 
 	public void visibleSignIn(boolean isSignIn) {
 		getViewState().setVisibleSignIn(isSignIn);
@@ -106,7 +110,6 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 						FIRST_CONNECT = true;
 						getViewState().startLifeBroadcast();
 					} else {
-						//mSubscriptionNewMessages.unsubscribe();
 						getViewState().startGettingMessages(mNextPageToken);
 					}
 					Log.d("tag", message + "new token");
@@ -155,13 +158,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	}
 
 	public void getLifeBroadcast() {
+		getViewState().showProgressBar(true);
 		mSubscriptionBroadcast = requestBroadcast()
 				.subscribeOn(Schedulers.io())
 				.map(BroadcastResponse::getItems)
-				.doOnError(throwable -> {
-					throwable.printStackTrace();
-					Log.d("presenter", "DoError getLifeBroadcast");
-				})
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<List<ItemsBroadcast>>() {
 					boolean isEmptyBroadcast;
@@ -182,12 +182,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					@Override
 					public void onError(Throwable e) {
 						Log.d("presenter", "Error getLifeBroadcast");
-						e.printStackTrace();
+						handleError(e);
 					}
 
 					@Override
 					public void onNext(List<ItemsBroadcast> itemses) {
 						if (itemses.size() == 0) {
+							getViewState().showProgressBar(false);
 							getViewState().showEmptyBroadcast();
 							isEmptyBroadcast = true;
 						} else {
@@ -203,25 +204,25 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public void getLifeChat(String lifeChatId) {
 		mSubscriptionChat = requestChat(lifeChatId)
 				.subscribeOn(Schedulers.io())
-				.doOnError(throwable -> {
-					throwable.printStackTrace();
-					Log.d("presenter", "DoError getLifeChat");
-				})
+				.delay(3000, TimeUnit.MILLISECONDS)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
 					@Override
 					public void onCompleted() {
+						getViewState().showProgressBar(false);
 						getViewState().startGettingMessages(mNextPageToken);
 					}
 
 					@Override
 					public void onError(Throwable e) {
+						handleError(e);
 						Log.d("presenter", "Error getLifeChat");
 					}
 
 					@Override
 					public void onNext(ChatResponse chatResponse) {
 						mNextPageToken = chatResponse.getNextPageToken();
+						mPollingInterval = chatResponse.getPollingIntervalMillis();
 						getViewState().setChatMessages(chatResponse.getItems());
 					}
 				});
@@ -230,20 +231,17 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public void getNextChatMessages() {
 		mSubscriptionNewMessages = requestNextMessages(mNextPageToken)
 				.subscribeOn(Schedulers.io())
-				.delay(1, TimeUnit.SECONDS)
+				.delay(mPollingInterval, TimeUnit.MILLISECONDS)
 				.timeout(10, TimeUnit.SECONDS)
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(new Subscriber<ChatResponse>() {
 					@Override
 					public void onCompleted() {
-						//mItemCount = ChatListActivity.mChatListAdapter.getItemCount();
 					}
 
 					@Override
 					public void onError(Throwable e) {
-						e.printStackTrace();
-						getNewAccessToken(false);
-						Log.d("presenter", "Error getNextChatMessages");
+						handleError(e);
 					}
 
 					@Override
@@ -252,6 +250,37 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 						getViewState().addMessages(chatResponse.getItems());
 					}
 				});
+	}
+
+	private void handleError(Throwable e) {
+		e.printStackTrace();
+		if (e instanceof HttpException) {
+			HttpException exception = (HttpException) e;
+			try {
+				JSONObject jsonObject = new JSONObject(exception.response().errorBody().string());
+				String message = jsonObject.toString();
+				Log.d("presenter HttpException", message);
+			} catch (JSONException | IOException e1) {
+				e1.printStackTrace();
+			}
+			switch (((HttpException) e).code()) {
+				case 403:
+					Log.d("presenter", "Error 403");
+					getViewState().startLifeChat(mLifeChatId);
+					break;
+				case 401:
+					getNewAccessToken(false);
+					Log.d("presenter", "Error 401");
+					break;
+				default:
+					Log.d("presenter", "unknown Error");
+			}
+			Log.d("presenter", "Error getNextChatMessages");
+		} else if (e instanceof UnknownHostException) {
+			getViewState().showErrorDialog(R.string.error_connect_title, R.string.error_connect_message, false);
+		} else if (e instanceof SocketTimeoutException) {
+			getViewState().showErrorDialog(R.string.error_connect_title, R.string.error_connect_message, false);
+		}
 	}
 
 	private Observable<BroadcastResponse> requestBroadcast() {
@@ -303,5 +332,9 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void startSettingsActivity() {
 		getViewState().showSettings();
+	}
+
+	public void errorDialog(int idTitle, int idMessage, boolean clickListener) {
+		getViewState().showErrorDialog(idTitle, idMessage, clickListener);
 	}
 }

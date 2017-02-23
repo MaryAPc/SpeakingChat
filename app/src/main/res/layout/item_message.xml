@@ -5,20 +5,30 @@
 	android:layout_height="wrap_content"
 	android:orientation="horizontal"
 	android:padding="@dimen/small_margin">
-
+	
+	<ImageView
+		android:id="@+id/item_message_image_view_avatar"
+		android:layout_width="30dp"
+		android:layout_height="30dp"
+		android:layout_gravity="center"
+		android:layout_marginRight="@dimen/small_margin"
+		tools:src="@color/colorAccent" />
+	
 	<TextView
 		android:id="@+id/item_message_text_view_username"
 		android:layout_width="100dp"
 		android:layout_height="wrap_content"
+		android:layout_gravity="center"
+		android:layout_marginRight="@dimen/small_margin"
 		android:paddingLeft="8dp"
 		android:textStyle="bold"
 		tools:text="Username" />
-
+	
 	<TextView
 		android:id="@+id/item_message_text_view_text_message"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:layout_marginLeft="@dimen/small_margin"
+		android:layout_gravity="center"
 		android:layout_weight="3"
 		android:gravity="center_vertical"
 		tools:text="Text message" />

@@ -5,8 +5,13 @@
 	<string name="connect_to_broadcast">Подключиться к трансляции</string>
 	<string name="error_connect">Ошибка подключения</string>
 
+	<string name="android_client_id">ID</string>
 	<string name="connect_to_broadcast_info">"Подключение к трансляции: "</string>
 	<string name="sign_out">Выйти</string>
 	<string name="preferences">Настройки</string>
 	<string name="settings_dialog_title">Введите новый интервал \n(в секундах)</string>
+	<string name="error_connect_title">Ошибка сети!</string>
+	<string name="error_connect_message">Проверьте соединение с интернетом и повторите подключение к трансляции</string>
+	<string name="error">Ошибка</string>
+	<string name="error_interval">Неверно указан интервал сообщений</string>
 </resources>

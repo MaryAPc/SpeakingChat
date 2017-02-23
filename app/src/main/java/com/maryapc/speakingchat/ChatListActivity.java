@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -12,6 +13,8 @@ import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.OnScrollListener;
@@ -25,6 +28,7 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatActivity;
@@ -68,6 +72,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@BindView(R.id.activity_chat_list_button_stop)
 	ImageButton mStopButton;
 
+	@BindView(R.id.activity_chat_list_progress_bar)
+	ProgressBar mProgressBar;
+
 	private static boolean LAST_MESSAGE_DONE = false;
 	private static final String TAG = "ChatListActivity";
 	private static final String APP_PREFERENCES = "app_preferences";
@@ -100,6 +107,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		mChatListAdapter = new ChatListAdapter(new ArrayList<>(), this);
 		mLayoutManager = new LinearLayoutManager(this);
 		mTextToSpeech = new TextToSpeech(this, this);
+
+		DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(this, mLayoutManager.getOrientation());
+		mChatListRecyclerView.addItemDecoration(dividerItemDecoration);
 		mChatListRecyclerView.setLayoutManager(mLayoutManager);
 		mChatListRecyclerView.setAdapter(mChatListAdapter);
 
@@ -132,7 +142,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				}
 			}
 		});
-
 		mTextToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
 			@Override
 			public void onStart(String s) {
@@ -197,7 +206,15 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@Override
 	protected void onResume() {
 		super.onResume();
-		mPresenter.setNewInterval(Long.parseLong(mDefaultPreferences.getString(PREFERENCES_SILENT, "7")));
+		long newInterval = 7;
+		try {
+			newInterval = Long.parseLong(mDefaultPreferences.getString(PREFERENCES_SILENT, "7"));
+		} catch (NumberFormatException e) {
+			mDefaultPreferences.edit().putString(PREFERENCES_SILENT, "7").apply();
+			mPresenter.errorDialog(R.string.error, R.string.error_interval, true);
+		} finally {
+			mPresenter.setNewInterval(newInterval);
+		}
 	}
 
 	@Override
@@ -298,7 +315,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
-	public void addMessages(List<ItemsChat> items) {
+	public synchronized void addMessages(List<ItemsChat> items) {
 		ChatListPresenter.mSubscriptionNewMessages.unsubscribe();
 		mChatListAdapter.addItems(items);
 		if (!isStopScroll) {
@@ -360,6 +377,22 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	public void showSettings() {
 		Intent intent = new Intent(this, ChatPreferences.class);
 		startActivity(intent);
+	}
+
+	@Override
+	public void showProgressBar(boolean visible) {
+		ChatListActivity.this.runOnUiThread(() -> mProgressBar.setVisibility(visible ? View.VISIBLE : View.GONE));
+	}
+
+	@Override
+	public void showErrorDialog(int idTitle, int idMessage, boolean clickListener) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle(idTitle)
+				.setMessage(idMessage)
+				.setPositiveButton("OK", clickListener ? (DialogInterface.OnClickListener) (dialogInterface, i) ->
+						mPresenter.startSettingsActivity() : null);
+		AlertDialog dialog = builder.create();
+		dialog.show();
 	}
 
 	@Override

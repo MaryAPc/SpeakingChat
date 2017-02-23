@@ -44,6 +44,12 @@ public class ItemsChat {
 	public static class AuthorDetails {
 		@SerializedName("displayName") //Username
 		private String mDisplayName;
+		@SerializedName("profileImageUrl")
+		private String mProfileImage;
+
+		public String getProfileImage() {
+			return mProfileImage;
+		}
 
 		public String getDisplayName() {
 			return mDisplayName;

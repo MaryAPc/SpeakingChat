@@ -12,6 +12,8 @@ public class ChatResponse {
 	private PageInfo mPageInfo;
 	@SerializedName("items")
 	private List<ItemsChat> mItemsChat;
+	@SerializedName("pollingIntervalMillis")
+	private int mPollingIntervalMillis;
 
 	public String getNextPageToken() {
 		return mNextPageToken;
@@ -23,6 +25,10 @@ public class ChatResponse {
 
 	public List<ItemsChat> getItems() {
 		return mItemsChat;
+	}
+
+	public int getPollingIntervalMillis() {
+		return mPollingIntervalMillis;
 	}
 
 	public static class PageInfo {

@@ -34,8 +34,8 @@ public class SpeakService {
 	}
 
 	private static String regexMessage(String text) {
-		String s = text.replaceAll("(?u)[^(а-яА-Яa-zA-Z0-9,.)|\\s]|[\\x21-\\x2B\\x2F]", "");
-		return s.replaceAll("([а-яa-zА-ЯA-Z])(\\1+)","$1");
+		String s = text.replaceAll("(?u)[^(а-яА-Яa-zA-ZёЁ0-9,.)|\\s]|[\\x21-\\x2B\\x2F]", "");
+		return s.replaceAll("([а-яa-zА-ЯA-ZёЁ])(\\1+)","$1");
 	}
 
 	public enum SpeechStatus {

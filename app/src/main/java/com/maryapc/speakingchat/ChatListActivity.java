@@ -22,6 +22,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -29,6 +31,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatActivity;
@@ -75,10 +78,18 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@BindView(R.id.activity_chat_list_progress_bar)
 	ProgressBar mProgressBar;
 
+	@BindView(R.id.activity_chat_list_relative_layout_hint)
+	RelativeLayout mHintRelativeLayout;
+
+	@BindView(R.id.activity_chat_list_button_hint_ok)
+	Button mOkHintButton;
+
 	private static boolean LAST_MESSAGE_DONE = false;
 	private static final String TAG = "ChatListActivity";
 	private static final String APP_PREFERENCES = "app_preferences";
 	private static final String PREFERENCES_SILENT = "silent_interval";
+	private static final String PREFERENCES_SILENT_SMALL = "silent_interval_small";
+	private static final String FIRST_LAUNCH = "first_launch";
 	private static final String SIGN_IN = "sign_in";
 	private static final String REFRESH_TOKEN = "refresh_token";
 	private static final String ACCESS_TOKEN = "access_token";
@@ -99,7 +110,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_chat_list);
 		ButterKnife.bind(this);
-
 		mConnectBroadcastButton.setOnClickListener(this);
 		mPlayButton.setOnClickListener(this);
 		mStopButton.setOnClickListener(this);
@@ -207,13 +217,16 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	protected void onResume() {
 		super.onResume();
 		long newInterval = 7;
+		long newSmallInterval = 2;
 		try {
 			newInterval = Long.parseLong(mDefaultPreferences.getString(PREFERENCES_SILENT, "7"));
+			newSmallInterval = Long.parseLong(mDefaultPreferences.getString(PREFERENCES_SILENT_SMALL, "2"));
 		} catch (NumberFormatException e) {
 			mDefaultPreferences.edit().putString(PREFERENCES_SILENT, "7").apply();
+			mDefaultPreferences.edit().putString(PREFERENCES_SILENT_SMALL, "2").apply();
 			mPresenter.errorDialog(R.string.error, R.string.error_interval, true);
 		} finally {
-			mPresenter.setNewInterval(newInterval);
+			mPresenter.setNewInterval(newInterval, newSmallInterval);
 		}
 	}
 
@@ -247,7 +260,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void showEmptyBroadcast() {
-		Toast.makeText(this, R.string.empty_list_broadcast, Toast.LENGTH_LONG).show();
+		Toast.makeText(this, R.string.empty_list_broadcast, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -393,6 +406,21 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 						mPresenter.startSettingsActivity() : null);
 		AlertDialog dialog = builder.create();
 		dialog.show();
+	}
+
+	@Override
+	public void showHintView() {
+		if (mSharedPreferences.getBoolean(FIRST_LAUNCH, true)) {
+			Animation animFadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+			mHintRelativeLayout.setVisibility(View.VISIBLE);
+			Animation animFadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
+			mHintRelativeLayout.startAnimation(animFadeIn);
+			mOkHintButton.setOnClickListener(view -> {
+				mHintRelativeLayout.startAnimation(animFadeOut);
+				mHintRelativeLayout.setVisibility(View.GONE);
+				mSharedPreferences.edit().putBoolean(FIRST_LAUNCH, false).apply();
+			});
+		}
 	}
 
 	@Override

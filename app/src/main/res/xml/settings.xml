@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 	<EditTextPreference
-		android:id="@+id/settings_edit_text_prefs"
 		android:key="silent_interval"
 		android:title="Интервал"
 		android:summary="Устанавливает паузу между сообщениями"
 		android:defaultValue="7"
+		android:dialogTitle="@string/settings_dialog_title" />
+
+	<EditTextPreference
+		android:key="silent_interval_small"
+		android:title="Интервал между короткими сообщениями"
+		android:summary="Пауза после сообщений до 15 символов"
+		android:defaultValue="2"
 		android:dialogTitle="@string/settings_dialog_title" />
 </PreferenceScreen>

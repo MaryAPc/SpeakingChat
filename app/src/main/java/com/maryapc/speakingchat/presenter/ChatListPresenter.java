@@ -6,6 +6,9 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
@@ -210,6 +213,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					@Override
 					public void onCompleted() {
 						getViewState().showProgressBar(false);
+						getViewState().showHintView();
 						getViewState().startGettingMessages(mNextPageToken);
 					}
 
@@ -277,9 +281,9 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			}
 			Log.d("presenter", "Error getNextChatMessages");
 		} else if (e instanceof UnknownHostException) {
-			getViewState().showErrorDialog(R.string.error_connect_title, R.string.error_connect_message, false);
+			getViewState().startGettingMessages(mNextPageToken);
 		} else if (e instanceof SocketTimeoutException) {
-			getViewState().showErrorDialog(R.string.error_connect_title, R.string.error_connect_message, false);
+			getViewState().startGettingMessages(mNextPageToken);
 		}
 	}
 
@@ -324,9 +328,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		}
 	}
 
-	public void setNewInterval(long interval) {
+	public void setNewInterval(long interval, long smallInterval) {
 		if (interval != 0) {
 			SpeakService.mInterval = interval;
+			SpeakService.mSmallInterval = smallInterval;
 		}
 	}
 
@@ -336,5 +341,20 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void errorDialog(int idTitle, int idMessage, boolean clickListener) {
 		getViewState().showErrorDialog(idTitle, idMessage, clickListener);
+	}
+
+	private boolean checkConnection() {
+		ConnectivityManager cm = (ConnectivityManager) MyApplication.getInstance().getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		return netInfo != null && netInfo.isConnectedOrConnecting();
+	}
+
+	private void handleErrorConnection() {
+		if (!checkConnection()) {
+			getViewState().showErrorDialog(R.string.error_connect_title, R.string.error_connect_message, false);
+			getViewState().startGettingMessages(mNextPageToken);
+		} else {
+			getViewState().startGettingMessages(mNextPageToken);
+		}
 	}
 }

@@ -1,80 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:id="@+id/main_layout"
-	xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:orientation="vertical">
+	android:layout_height="match_parent">
 	
 	<LinearLayout
+		android:id="@+id/main_layout"
 		android:layout_width="match_parent"
-		android:layout_height="0dp"
-		android:layout_weight="1"
+		android:layout_height="match_parent"
 		android:orientation="vertical">
 		
-		<Button
-			android:id="@+id/activity_chat_list_button_connect_broadcast"
-			style="@style/ThemeButton"
-			android:layout_width="wrap_content"
-			android:layout_height="40dp"
-			android:layout_gravity="center"
-			android:layout_margin="@dimen/small_margin"
-			android:text="@string/connect_to_broadcast"
-			android:visibility="visible" />
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="0dp"
+			android:layout_weight="1"
+			android:orientation="vertical">
+			
+			<Button
+				android:id="@+id/activity_chat_list_button_connect_broadcast"
+				style="@style/ThemeButton"
+				android:layout_width="wrap_content"
+				android:layout_height="40dp"
+				android:layout_gravity="center"
+				android:layout_margin="@dimen/small_margin"
+				android:text="@string/connect_to_broadcast"
+				android:visibility="visible" />
+			
+			<ProgressBar
+				android:id="@+id/activity_chat_list_progress_bar"
+				style="@android:style/Widget.Material.ProgressBar"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_gravity="center"
+				android:layout_margin="@dimen/small_margin"
+				android:visibility="gone"
+				tools:visibility="visible" />
+			
+			<android.support.v7.widget.RecyclerView
+				android:id="@+id/activity_chat_list_recycler_list"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:visibility="visible" />
+		</LinearLayout>
 		
-		<ProgressBar
-			android:id="@+id/activity_chat_list_progress_bar"
-			style="@android:style/Widget.Material.ProgressBar"
-			android:layout_width="wrap_content"
+		<LinearLayout
+			android:id="@+id/activity_chat_list_linear_layout_play_bar"
+			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:layout_gravity="center"
-			android:layout_margin="@dimen/small_margin"
+			android:layout_marginBottom="6dp"
+			android:layout_marginTop="6dp"
+			android:gravity="center"
+			android:orientation="horizontal"
 			android:visibility="gone"
-			tools:visibility="visible" />
+			tools:visibility="visible">
+			
+			<ImageButton
+				android:id="@+id/activity_chat_list_button_play"
+				style="@style/ThemeButton"
+				android:layout_width="70dp"
+				android:layout_height="35dp"
+				android:layout_marginRight="@dimen/small_margin"
+				android:src="@drawable/ic_play_arrow_black_36dp"
+				android:tint="@color/dark_grey" />
+			
+			<ImageButton
+				android:id="@+id/activity_chat_list_button_stop"
+				style="@style/ThemeButton"
+				android:layout_width="70dp"
+				android:layout_height="35dp"
+				android:layout_marginLeft="@dimen/small_margin"
+				android:src="@drawable/ic_stop_black_36dp"
+				android:tint="@color/dark_grey" />
 		
-		<android.support.v7.widget.RecyclerView
-			android:id="@+id/activity_chat_list_recycler_list"
+		</LinearLayout>
+		
+		<WebView
+			android:id="@+id/activity_chat_list_web_view"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
-			android:visibility="visible" />
+			android:visibility="gone" />
 	</LinearLayout>
 	
-	<LinearLayout
-		android:id="@+id/activity_chat_list_linear_layout_play_bar"
+	<RelativeLayout
+		android:id="@+id/activity_chat_list_relative_layout_hint"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_marginBottom="6dp"
-		android:layout_marginTop="6dp"
-		android:gravity="center"
-		android:orientation="horizontal"
+		android:layout_height="match_parent"
+		android:background="#9e000000"
 		android:visibility="gone"
 		tools:visibility="visible">
 		
-		<ImageButton
-			android:id="@+id/activity_chat_list_button_play"
-			style="@style/ThemeButton"
-			android:layout_width="70dp"
-			android:layout_height="35dp"
-			android:layout_marginRight="@dimen/small_margin"
-			android:src="@drawable/ic_play_arrow_black_36dp"
-			android:tint="@color/dark_grey" />
+		<TextView
+			android:id="@+id/activity_chat_list_text_view_hint"
+			android:layout_width="250dp"
+			android:layout_height="wrap_content"
+			android:layout_alignParentEnd="true"
+			android:layout_alignParentTop="true"
+			android:layout_marginRight="@dimen/medium_margin"
+			android:layout_marginTop="120dp"
+			android:text="@string/hint"
+			android:textAlignment="center"
+			android:textColor="#ffffff"
+			android:textSize="18sp" />
 		
-		<ImageButton
-			android:id="@+id/activity_chat_list_button_stop"
-			style="@style/ThemeButton"
-			android:layout_width="70dp"
-			android:layout_height="35dp"
-			android:layout_marginLeft="@dimen/small_margin"
-			android:src="@drawable/ic_stop_black_36dp"
-			android:tint="@color/dark_grey" />
-	
-	</LinearLayout>
-	
-	<WebView
-		android:id="@+id/activity_chat_list_web_view"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:visibility="gone" />
+		<ImageView
+			android:id="@+id/activity_chat_list_image_view_arrow"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_below="@+id/activity_chat_list_text_view_hint"
+			android:layout_centerHorizontal="true"
+			android:rotation="270"
+			android:src="@drawable/ic_reply_white_36dp" />
 
-
-</LinearLayout>
+		<Button
+			android:id="@+id/activity_chat_list_button_hint_ok"
+			style="@android:style/Widget.Material.Light.Button.Small"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_alignParentBottom="true"
+			android:layout_alignParentEnd="true"
+			android:layout_margin="@dimen/small_margin"
+			android:text="@string/ok" />
+	</RelativeLayout>
+</FrameLayout>

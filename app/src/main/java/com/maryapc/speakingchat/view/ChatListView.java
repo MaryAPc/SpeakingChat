@@ -43,4 +43,6 @@ public interface ChatListView extends MvpView{
 	void showProgressBar(boolean visible);
 
 	void showErrorDialog(int idTitle, int idMessage, boolean clickListener);
+
+	void showHintView();
 }

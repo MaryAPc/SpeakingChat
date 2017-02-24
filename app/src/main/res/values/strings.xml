@@ -14,4 +14,6 @@
 	<string name="error_connect_message">Проверьте соединение с интернетом и повторите подключение к трансляции</string>
 	<string name="error">Ошибка</string>
 	<string name="error_interval">Неверно указан интервал сообщений</string>
+	<string name="hint">Нажмите на сообщение, \nс которого начнется голосовое воспроизведение</string>
+	<string name="ok">OK</string>
 </resources>

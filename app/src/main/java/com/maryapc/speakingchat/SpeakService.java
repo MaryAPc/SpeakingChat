@@ -9,6 +9,7 @@ public class SpeakService {
 
 	public static SpeechStatus mStatus;
 	public static long mInterval;
+	public static long mSmallInterval;
 
 	public synchronized static void speechMessages(TextToSpeech textToSpeech, int position, ChatListAdapter adapter) {
 		String message;
@@ -20,7 +21,7 @@ public class SpeakService {
 				message = adapter.getChatList().get(i).getSnippet().getTextMessageDetails().getMessageText();
 				textToSpeech.speak(regexMessage(message), TextToSpeech.QUEUE_ADD, null, "speech_id_message" + i);
 				if (message.length() <= 15) {
-					textToSpeech.playSilentUtterance(2000, TextToSpeech.QUEUE_ADD, "speech_id_silent" + i);
+					textToSpeech.playSilentUtterance(mSmallInterval * 1000, TextToSpeech.QUEUE_ADD, "speech_id_silent" + i);
 				} else {
 					textToSpeech.playSilentUtterance(mInterval * 1000, TextToSpeech.QUEUE_ADD, "speech_id_silent" + i);
 				}

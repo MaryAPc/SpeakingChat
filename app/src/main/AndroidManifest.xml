@@ -11,6 +11,9 @@
 		android:label="@string/app_name"
 		android:supportsRtl="true"
 		android:theme="@style/AppTheme">
+		<meta-data
+			android:name="io.fabric.ApiKey"
+			android:value="f95c73badfcf2247232c7ea5fecf04978987104d" />
 		<activity
 			android:name=".ChatListActivity"
 			android:screenOrientation="portrait">
@@ -21,8 +24,12 @@
 			</intent-filter>
 		</activity>
 		<activity
-			android:name=".ChatPreferences"
+			android:name=".utils.ChatPreferences"
 			android:screenOrientation="portrait"/>
+		<activity android:name=".GooglePlayActivity"
+			android:screenOrientation="portrait" />
+		<activity android:name=".AboutAppActivity"
+			android:screenOrientation="portrait" />
 	</application>
 
 </manifest>

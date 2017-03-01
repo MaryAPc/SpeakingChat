@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
@@ -44,6 +46,8 @@ import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
 import com.maryapc.speakingchat.model.chat.ItemsChat;
 import com.maryapc.speakingchat.network.GoogleApiUrls;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
+import com.maryapc.speakingchat.utils.ChatPreferences;
+import com.maryapc.speakingchat.utils.SpeakService;
 import com.maryapc.speakingchat.view.ChatListView;
 
 import butterknife.BindView;
@@ -56,7 +60,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
                                                                       GoogleApiClient.OnConnectionFailedListener {
 	@InjectPresenter
 	ChatListPresenter mPresenter;
-
 	@BindView(R.id.activity_chat_list_button_connect_broadcast)
 	Button mConnectBroadcastButton;
 
@@ -85,7 +88,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	Button mOkHintButton;
 
 	private static boolean LAST_MESSAGE_DONE = false;
+	private static final int REQUEST_CODE = 1;
 	private static final String TAG = "ChatListActivity";
+	private static final String GOOGLE_PLAY_PACKAGE = "com.android.vending";
 	private static final String APP_PREFERENCES = "app_preferences";
 	private static final String PREFERENCES_SILENT = "silent_interval";
 	private static final String PREFERENCES_SILENT_SMALL = "silent_interval_small";
@@ -155,6 +160,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		mTextToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
 			@Override
 			public void onStart(String s) {
+				if (!s.startsWith("s")) {
+					ChatListPresenter.mSpeakMessage = Integer.valueOf(s);
+				}
 			}
 
 			@Override
@@ -192,6 +200,11 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		mTextToSpeech = new TextToSpeech(this, this);
+	}
+
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.main_menu, menu);
 		return true;
@@ -207,12 +220,16 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				return true;
 			case R.id.main_menu_preferences:
 				mPresenter.stopSpeech(mTextToSpeech);
-				mPresenter.startSettingsActivity();
+				mPresenter.startActivity(ChatPreferences.class);
+				return true;
+			case R.id.main_menu_about:
+				mPresenter.startActivity(AboutAppActivity.class);
 				return true;
 			default:
 				return super.onOptionsItemSelected(item);
 		}
 	}
+
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -253,7 +270,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				break;
 			case R.id.activity_chat_list_button_play:
 				SpeakService.mStatus = SpeakService.SpeechStatus.SPEAK;
-				mPresenter.speech(mTextToSpeech, ChatListPresenter.mLastPlayPosition, mChatListAdapter);
+				mPresenter.speech(mTextToSpeech, ChatListPresenter.mSpeakMessage, mChatListAdapter);
 				break;
 		}
 	}
@@ -324,7 +341,8 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void showConnectInfo(String titleBroadcast) {
-		Toast.makeText(this, getString(R.string.connect_to_broadcast_info) + titleBroadcast, Toast.LENGTH_SHORT).show();
+		String connectTo = getString(R.string.connect_to_broadcast_info, titleBroadcast);
+		Toast.makeText(this, connectTo, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -387,8 +405,8 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
-	public void showSettings() {
-		Intent intent = new Intent(this, ChatPreferences.class);
+	public void createIntent(Class<?> activity) {
+		Intent intent = new Intent(this, activity);
 		startActivity(intent);
 	}
 
@@ -402,8 +420,8 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle(idTitle)
 				.setMessage(idMessage)
-				.setPositiveButton("OK", clickListener ? (DialogInterface.OnClickListener) (dialogInterface, i) ->
-						mPresenter.startSettingsActivity() : null);
+				.setPositiveButton(R.string.ok, clickListener ? (DialogInterface.OnClickListener) (dialogInterface, i) ->
+						mPresenter.startActivity(ChatPreferences.class) : null);
 		AlertDialog dialog = builder.create();
 		dialog.show();
 	}
@@ -424,6 +442,37 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
+	public void showTtsDialog() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle(R.string.attention)
+				.setMessage(R.string.tts_no_install_message)
+				.setPositiveButton(R.string.install, (dialogInterface, i) -> mPresenter.goGooglePlay(getString(R.string.uri_tts)))
+				.setNegativeButton(R.string.cansel, (dialogInterface, i) ->
+						Toast.makeText(MyApplication.getInstance(), R.string.speech_imposible, Toast.LENGTH_LONG).show());
+		AlertDialog dialog = builder.create();
+		dialog.show();
+	}
+
+	@Override
+	public void goToMarket(String data) {
+		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(data));
+		List<ResolveInfo> resInfo = getPackageManager().queryIntentActivities(intent, 0);
+		if (resInfo.isEmpty()) {
+			return;
+		}
+		for (ResolveInfo info : resInfo) {
+			if (info.activityInfo == null) {
+				continue;
+			}
+			if (GOOGLE_PLAY_PACKAGE.equals(info.activityInfo.packageName)) {
+				intent.setPackage(info.activityInfo.packageName);
+				break;
+			}
+		}
+		startActivityForResult(intent, REQUEST_CODE);
+	}
+
+	@Override
 	public void onItemClick(View view, int position) {
 		SpeakService.mStatus = SpeakService.SpeechStatus.SPEAK;
 		mPresenter.speech(mTextToSpeech, position, mChatListAdapter);
@@ -435,11 +484,15 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			Locale locale = new Locale("ru");
 			int result = mTextToSpeech.setLanguage(locale);
 			if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-				Log.e("TTS", "Язык не поддерживается");
+				if (BuildConfig.DEBUG) {
+					Log.e("TTS", "Язык не поддерживается");
+				}
 			}
 		} else {
-			Log.e("TTS", "Ошибка");
-			Toast.makeText(this, "Ошибка голосового воспроизведения", Toast.LENGTH_LONG).show();
+			if (BuildConfig.DEBUG) {
+				Log.e("TTS", "Ошибка");
+			}
+			mPresenter.ttsErrorDialog();
 		}
 	}
 

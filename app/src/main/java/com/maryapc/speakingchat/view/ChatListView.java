@@ -38,11 +38,15 @@ public interface ChatListView extends MvpView{
 
 	void startGettingMessages(String nextPageToken);
 
-	void showSettings();
+	void createIntent(Class<?> activity);
 
 	void showProgressBar(boolean visible);
 
 	void showErrorDialog(int idTitle, int idMessage, boolean clickListener);
 
 	void showHintView();
+
+	void showTtsDialog();
+
+	void goToMarket(String data);
 }

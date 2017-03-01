@@ -1,4 +1,4 @@
-package com.maryapc.speakingchat;
+package com.maryapc.speakingchat.utils;
 
 import android.speech.tts.TextToSpeech;
 
@@ -19,7 +19,7 @@ public class SpeakService {
 				textToSpeech.speak(regexMessage(adapter.getChatList().get(i).getAuthorDetails().getDisplayName()), TextToSpeech.QUEUE_ADD, null, "speech_id_name" + i);
 				textToSpeech.playSilentUtterance(5, TextToSpeech.QUEUE_ADD, "speech_id_silent_short" + i);
 				message = adapter.getChatList().get(i).getSnippet().getTextMessageDetails().getMessageText();
-				textToSpeech.speak(regexMessage(message), TextToSpeech.QUEUE_ADD, null, "speech_id_message" + i);
+				textToSpeech.speak(regexMessage(message), TextToSpeech.QUEUE_ADD, null, String.valueOf(i));
 				if (message.length() <= 15) {
 					textToSpeech.playSilentUtterance(mSmallInterval * 1000, TextToSpeech.QUEUE_ADD, "speech_id_silent" + i);
 				} else {

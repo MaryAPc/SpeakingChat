@@ -9,14 +9,16 @@ import java.util.concurrent.TimeUnit;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import com.arellomobile.mvp.InjectViewState;
 import com.arellomobile.mvp.MvpPresenter;
+import com.maryapc.speakingchat.BuildConfig;
 import com.maryapc.speakingchat.MyApplication;
 import com.maryapc.speakingchat.R;
-import com.maryapc.speakingchat.SpeakService;
+import com.maryapc.speakingchat.utils.SpeakService;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
 import com.maryapc.speakingchat.model.TokenResponse;
 import com.maryapc.speakingchat.model.brooadcast.BroadcastResponse;
@@ -57,6 +59,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 	public static String mTokenType = "";
 
 	public static int mLastPlayPosition = 0;
+	public static int mSpeakMessage = 0;
 	private int mPollingInterval;
 
 	public void visibleSignIn(boolean isSignIn) {
@@ -70,10 +73,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			public void onResponse(Call<TokenResponse> call, retrofit2.Response<TokenResponse> response) {
 				if (response.isSuccessful()) {
 					getViewState().startLifeBroadcast();
-					Log.e("tag", "check success");
+					if (BuildConfig.DEBUG) Log.e("tag", "check success");
 				} else { //невалидный токен
 					getNewAccessToken(true);
-					Log.e("tag", "check NOT success");
+					if (BuildConfig.DEBUG) Log.e("tag", "check NOT success");
 				}
 			}
 
@@ -98,7 +101,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		client.newCall(request).enqueue(new Callback() {
 			@Override
 			public void onFailure(Request request, IOException e) {
-				Log.e("tag", e.toString());
+				if (BuildConfig.DEBUG) Log.e("tag", e.toString());
 			}
 
 			@Override
@@ -115,7 +118,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					} else {
 						getViewState().startGettingMessages(mNextPageToken);
 					}
-					Log.d("tag", message + "new token");
+					if (BuildConfig.DEBUG) Log.d("tag", message + "new token");
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -152,7 +155,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mRefreshToken = jsonObject.get("refresh_token").toString();
 					getViewState().saveTokens(mRefreshToken, mAccessToken, mTokenType);
 					getViewState().startLifeBroadcast();
-					Log.d("tag", message);
+					if (BuildConfig.DEBUG) Log.d("tag", message);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -184,7 +187,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 					@Override
 					public void onError(Throwable e) {
-						Log.d("presenter", "Error getLifeBroadcast");
+						if (BuildConfig.DEBUG) Log.d("presenter", "Error getLifeBroadcast");
 						handleError(e);
 					}
 
@@ -220,7 +223,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					@Override
 					public void onError(Throwable e) {
 						handleError(e);
-						Log.d("presenter", "Error getLifeChat");
+						if (BuildConfig.DEBUG) Log.d("presenter", "Error getLifeChat");
 					}
 
 					@Override
@@ -263,23 +266,23 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			try {
 				JSONObject jsonObject = new JSONObject(exception.response().errorBody().string());
 				String message = jsonObject.toString();
-				Log.d("presenter HttpException", message);
+				if (BuildConfig.DEBUG) Log.d("presenter HttpException", message);
 			} catch (JSONException | IOException e1) {
 				e1.printStackTrace();
 			}
 			switch (((HttpException) e).code()) {
 				case 403:
-					Log.d("presenter", "Error 403");
+					if (BuildConfig.DEBUG) Log.d("presenter", "Error 403");
 					getViewState().startLifeChat(mLifeChatId);
 					break;
 				case 401:
 					getNewAccessToken(false);
-					Log.d("presenter", "Error 401");
+					if (BuildConfig.DEBUG) Log.d("presenter", "Error 401");
 					break;
 				default:
-					Log.d("presenter", "unknown Error");
+					if (BuildConfig.DEBUG) Log.d("presenter", "unknown Error");
 			}
-			Log.d("presenter", "Error getNextChatMessages");
+			if (BuildConfig.DEBUG) Log.d("presenter", "Error getNextChatMessages");
 		} else if (e instanceof UnknownHostException) {
 			getViewState().startGettingMessages(mNextPageToken);
 		} else if (e instanceof SocketTimeoutException) {
@@ -335,8 +338,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		}
 	}
 
-	public void startSettingsActivity() {
-		getViewState().showSettings();
+	public void startActivity(Class<?> activity) {
+		getViewState().createIntent(activity);
 	}
 
 	public void errorDialog(int idTitle, int idMessage, boolean clickListener) {
@@ -356,5 +359,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		} else {
 			getViewState().startGettingMessages(mNextPageToken);
 		}
+	}
+
+	public void ttsErrorDialog() {
+		getViewState().showTtsDialog();
+	}
+
+	public void goGooglePlay(String data) {
+		getViewState().goToMarket(data);
 	}
 }

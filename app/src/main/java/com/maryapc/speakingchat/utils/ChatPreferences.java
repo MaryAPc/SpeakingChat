@@ -1,7 +1,9 @@
-package com.maryapc.speakingchat;
+package com.maryapc.speakingchat.utils;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
+
+import com.maryapc.speakingchat.R;
 
 public class ChatPreferences extends PreferenceActivity {
 	@Override

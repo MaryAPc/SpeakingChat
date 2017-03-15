@@ -18,8 +18,6 @@ public interface ChatListView extends MvpView{
 
 	void saveAccessToken(String accessToken);
 
-	void showError();
-
 	void setChatMessages(List<ItemsChat> itemsChat);
 
 	void showConnectInfo(String titleBroadcast);

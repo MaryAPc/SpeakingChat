@@ -26,25 +26,26 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatActivity;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Scope;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
 import com.maryapc.speakingchat.model.chat.ItemsChat;
-import com.maryapc.speakingchat.network.GoogleApiUrls;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
 import com.maryapc.speakingchat.utils.ChatPreferences;
 import com.maryapc.speakingchat.utils.SpeakService;
@@ -66,9 +67,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@BindView(R.id.activity_chat_list_recycler_list)
 	RecyclerView mChatListRecyclerView;
 
-	@BindView(R.id.activity_chat_list_web_view)
-	WebView mWebView;
-
 	@BindView(R.id.activity_chat_list_linear_layout_play_bar)
 	LinearLayout mSpeechBar;
 
@@ -87,8 +85,21 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@BindView(R.id.activity_chat_list_button_hint_ok)
 	Button mOkHintButton;
 
+	@BindView(R.id.activity_chat_list_text_view_empty_broadcast)
+	TextView mEmptyBroadcastTextView;
+
+	@BindView(R.id.activity_chat_list_button_sign_in)
+	SignInButton mSignInButton;
+
+	@BindView(R.id.activity_chat_list_linear_layout_sign_in)
+	LinearLayout mSignInLinearLayout;
+
+	@BindView(R.id.activity_chat_list_linear_layout_content)
+	LinearLayout mContentLinearLayout;
+
 	private static boolean LAST_MESSAGE_DONE = false;
 	private static final int REQUEST_CODE = 1;
+	private static final int RC_GET_AUTH_CODE = 2;
 	private static final String TAG = "ChatListActivity";
 	private static final String GOOGLE_PLAY_PACKAGE = "com.android.vending";
 	private static final String APP_PREFERENCES = "app_preferences";
@@ -101,14 +112,13 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	private static final String TOKEN_TYPE = "token_type";
 
 	private SharedPreferences mSharedPreferences;
+	private SharedPreferences mDefaultPreferences;
 	private ChatListAdapter mChatListAdapter;
 	private LinearLayoutManager mLayoutManager;
 	private TextToSpeech mTextToSpeech;
-
 	private GoogleApiClient mGoogleApiClient;
 
 	private boolean isStopScroll;
-	private SharedPreferences mDefaultPreferences;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -118,6 +128,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		mConnectBroadcastButton.setOnClickListener(this);
 		mPlayButton.setOnClickListener(this);
 		mStopButton.setOnClickListener(this);
+		mSignInButton.setOnClickListener(this);
 
 		mChatListAdapter = new ChatListAdapter(new ArrayList<>(), this);
 		mLayoutManager = new LinearLayoutManager(this);
@@ -177,9 +188,13 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	private void prepareGoogleClient() {
+		String serverClientId = getString(R.string.server_client_id);
 		GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+				.requestServerAuthCode(serverClientId, true)
 				.requestEmail()
+				.requestScopes(new Scope("https://www.googleapis.com/auth/youtube.readonly"))
 				.build();
+
 		mGoogleApiClient = new GoogleApiClient.Builder(this)
 				.enableAutoManage(this, this)
 				.addApi(Auth.GOOGLE_SIGN_IN_API, gso)
@@ -199,9 +214,31 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		});
 	}
 
+	private void getAuthCode() {
+		Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
+		startActivityForResult(signInIntent, RC_GET_AUTH_CODE);
+	}
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		mTextToSpeech = new TextToSpeech(this, this);
+		if (requestCode == RC_GET_AUTH_CODE) {
+			GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+			if (result.isSuccess()) {
+				GoogleSignInAccount acct = result.getSignInAccount();
+				assert acct != null;
+				String authCode = acct.getServerAuthCode();
+				acct.getIdToken();
+				Log.d(TAG, authCode);
+				mSharedPreferences.edit().putBoolean(SIGN_IN, true).apply();
+				mPresenter.getAccessToken(authCode);
+				mSignInLinearLayout.setVisibility(View.GONE);
+				mContentLinearLayout.setVisibility(View.VISIBLE);
+			} else {
+				mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
+				mPresenter.errorDialog(R.string.error, R.string.error_auth, false);
+			}
+		}
 	}
 
 	@Override
@@ -216,6 +253,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			case R.id.main_menu_sign_out:
 				mPresenter.stopSpeech(mTextToSpeech);
 				mSpeechBar.setVisibility(View.GONE);
+				mEmptyBroadcastTextView.setVisibility(View.GONE);
 				signOut();
 				return true;
 			case R.id.main_menu_preferences:
@@ -260,6 +298,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	public void onClick(View v) {
 		switch (v.getId()) {
 			case R.id.activity_chat_list_button_connect_broadcast:
+				mEmptyBroadcastTextView.setVisibility(View.GONE);
 				mPresenter.stopSpeech(mTextToSpeech);
 				mPresenter.unsubscribeAll();
 				mChatListAdapter.clean();
@@ -272,44 +311,26 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				SpeakService.mStatus = SpeakService.SpeechStatus.SPEAK;
 				mPresenter.speech(mTextToSpeech, ChatListPresenter.mSpeakMessage, mChatListAdapter);
 				break;
+			case R.id.activity_chat_list_button_sign_in:
+				getAuthCode();
+				break;
 		}
 	}
 
 	@Override
 	public void showEmptyBroadcast() {
-		Toast.makeText(this, R.string.empty_list_broadcast, Toast.LENGTH_SHORT).show();
+		mEmptyBroadcastTextView.setVisibility(View.VISIBLE);
 	}
 
 	@Override
 	public void setVisibleSignIn(boolean isSignIn) {
 		if (isSignIn) {
-			mWebView.setVisibility(View.GONE);
+			mSignInLinearLayout.setVisibility(View.GONE);
 		} else {
-			mChatListRecyclerView.setVisibility(View.GONE);
-			mConnectBroadcastButton.setVisibility(View.GONE);
-			mWebView.setVisibility(View.VISIBLE);
-			mWebView.getSettings().setJavaScriptEnabled(true);
-			mWebView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-			mWebView.loadUrl(GoogleApiUrls.getSignInUrl());
-			mWebView.setWebViewClient(new WebViewClient() {
-				@Override
-				public void onPageFinished(WebView view, String url) {
-					String cod = view.getTitle();
-					if (cod.split("=")[0].equals("Success code")) {
-						mWebView.setVisibility(View.INVISIBLE);
-						Intent temp = new Intent(view.getContext(), Auth.class);
-						String authCode = cod.split("=")[1];
-						setResult(RESULT_OK, temp);
-						mSharedPreferences.edit().putBoolean(SIGN_IN, true).apply();
-						mPresenter.getAccessToken(authCode);
-						mConnectBroadcastButton.setVisibility(View.VISIBLE);
-						mChatListRecyclerView.setVisibility(View.VISIBLE);
-						mWebView.setVisibility(View.GONE);
-					} else {
-						mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
-					}
-				}
-			});
+			mContentLinearLayout.setVisibility(View.GONE);
+			Animation animFadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+			mSignInLinearLayout.setVisibility(View.VISIBLE);
+			mSignInLinearLayout.startAnimation(animFadeIn);
 		}
 	}
 
@@ -327,11 +348,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		mSharedPreferences.edit()
 				.putString(ACCESS_TOKEN, accessToken)
 				.apply();
-	}
-
-	@Override
-	public void showError() {
-		Toast.makeText(this, R.string.error_connect, Toast.LENGTH_LONG).show();
 	}
 
 	@Override

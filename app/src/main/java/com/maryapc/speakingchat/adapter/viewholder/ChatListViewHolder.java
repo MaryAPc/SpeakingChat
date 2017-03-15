@@ -27,7 +27,11 @@ public class ChatListViewHolder extends RecyclerView.ViewHolder{
 
 	public ChatListViewHolder(View itemView) {
 		super(itemView);
-		ButterKnife.bind(this, itemView);
+		try {
+			ButterKnife.bind(this, itemView);
+		} catch (IllegalStateException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void bind(ItemsChat model) {

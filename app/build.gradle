@@ -18,6 +18,12 @@ apply plugin: 'io.fabric'
 
 android {
     signingConfigs {
+        config {
+            keyAlias 'myalias'
+            keyPassword 'mar131313'
+            storeFile file('C:/Users/Marya/Documents/SpeakingChat/my_key_store.jks')
+            storePassword 'mar131313'
+        }
     }
     compileSdkVersion 25
     buildToolsVersion "25.0.0"

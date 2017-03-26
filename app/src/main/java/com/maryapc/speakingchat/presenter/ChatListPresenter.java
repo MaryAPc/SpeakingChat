@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
@@ -18,13 +17,13 @@ import com.arellomobile.mvp.MvpPresenter;
 import com.maryapc.speakingchat.BuildConfig;
 import com.maryapc.speakingchat.MyApplication;
 import com.maryapc.speakingchat.R;
-import com.maryapc.speakingchat.utils.SpeakService;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
 import com.maryapc.speakingchat.model.TokenResponse;
 import com.maryapc.speakingchat.model.brooadcast.BroadcastResponse;
 import com.maryapc.speakingchat.model.brooadcast.ItemsBroadcast;
 import com.maryapc.speakingchat.model.chat.ChatResponse;
 import com.maryapc.speakingchat.network.RetrofitService;
+import com.maryapc.speakingchat.utils.SpeakService;
 import com.maryapc.speakingchat.view.ChatListView;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.FormEncodingBuilder;
@@ -90,7 +89,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		OkHttpClient client = new OkHttpClient();
 		RequestBody requestBody = new FormEncodingBuilder()
 				.add("refresh_token", mRefreshToken)
-				.add("client_id", MyApplication.getInstance().getString(R.string.android_client_id))
+				.add("client_id", MyApplication.getInstance().getString(R.string.server_client_id))
+				.add("client_secret", "ppIohjp0kMQUbOVWXPkHAkaf")
 				.add("grant_type", "refresh_token")
 				.build();
 		final Request request = new Request.Builder()
@@ -130,7 +130,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		OkHttpClient client = new OkHttpClient();
 		RequestBody requestBody = new FormEncodingBuilder()
 				.add("grant_type", "authorization_code")
-				.add("client_id", MyApplication.getInstance().getString(R.string.android_client_id))
+				.add("client_id", MyApplication.getInstance().getString(R.string.server_client_id))
+				.add("client_secret", "ppIohjp0kMQUbOVWXPkHAkaf")
 				.add("redirect_uri", "urn:ietf:wg:oauth:2.0:oob")
 				.add("code", authCode)
 				.build();
@@ -149,7 +150,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			public void onResponse(Response response) throws IOException {
 				try {
 					JSONObject jsonObject = new JSONObject(response.body().string());
-					final String message = jsonObject.toString(5);
+					final String message = jsonObject.toString();
 					mAccessToken = jsonObject.get("access_token").toString();
 					mTokenType = jsonObject.get("token_type").toString();
 					mRefreshToken = jsonObject.get("refresh_token").toString();
@@ -324,11 +325,14 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		FIRST_CONNECT = true;
 		if (mSubscriptionBroadcast != null) {
 			mSubscriptionBroadcast.unsubscribe();
-		} else if (mSubscriptionNewMessages != null) {
+		}
+		if (mSubscriptionNewMessages != null) {
 			mSubscriptionNewMessages.unsubscribe();
-		} else if (mSubscriptionChat != null) {
+		}
+		if (mSubscriptionChat != null) {
 			mSubscriptionChat.unsubscribe();
 		}
+		getViewState().saveTokens("", "", "");
 	}
 
 	public void setNewInterval(long interval, long smallInterval) {
@@ -338,8 +342,12 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		}
 	}
 
+	public void insertFragment(android.app.Fragment fragment) {
+		getViewState().addFragment(fragment);
+	}
+
 	public void startActivity(Class<?> activity) {
-		getViewState().createIntent(activity);
+		getViewState().showActivity(activity);
 	}
 
 	public void errorDialog(int idTitle, int idMessage, boolean clickListener) {
@@ -367,5 +375,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void goGooglePlay(String data) {
 		getViewState().goToMarket(data);
+	}
+
+	public void setProfileData() {
+		getViewState().setProfileData();
+	}
+
+	public void saveUserData(String photoUrl, String displayName, String email) {
+		getViewState().saveUserData(photoUrl, displayName, email);
 	}
 }

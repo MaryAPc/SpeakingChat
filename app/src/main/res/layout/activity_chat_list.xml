@@ -5,26 +5,41 @@
 	android:layout_height="match_parent">
 	
 	<LinearLayout
-		android:id="@+id/main_layout"
+		android:id="@+id/activity_chat_list_linear_layout_sign_in"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:orientation="vertical">
+		android:orientation="vertical"
+		android:visibility="gone"
+		tools:visibility="visible">
+		
+		<ImageView
+			android:id="@+id/activity_chat_list_image_view_logo"
+			android:layout_width="300dp"
+			android:layout_height="300dp"
+			android:layout_gravity="center|fill_vertical"
+			android:layout_marginTop="64dp"
+			android:src="@drawable/logosignin" />
+		
+		<com.google.android.gms.common.SignInButton
+			android:id="@+id/activity_chat_list_button_sign_in"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center" />
+	</LinearLayout>
+	
+	<LinearLayout
+		android:id="@+id/activity_chat_list_linear_layout_content"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:orientation="vertical"
+		tools:visibility="visible">
 		
 		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="0dp"
 			android:layout_weight="1"
-			android:orientation="vertical">
-			
-			<Button
-				android:id="@+id/activity_chat_list_button_connect_broadcast"
-				style="@style/ThemeButton"
-				android:layout_width="wrap_content"
-				android:layout_height="40dp"
-				android:layout_gravity="center"
-				android:layout_margin="@dimen/small_margin"
-				android:text="@string/connect_to_broadcast"
-				android:visibility="visible" />
+			android:orientation="vertical"
+			tools:visibility="visible">
 			
 			<ProgressBar
 				android:id="@+id/activity_chat_list_progress_bar"
@@ -36,11 +51,22 @@
 				android:visibility="gone"
 				tools:visibility="visible" />
 			
+			<TextView
+				android:id="@+id/activity_chat_list_text_view_empty_broadcast"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="36dp"
+				android:gravity="center"
+				android:text="@string/empty_list_broadcast"
+				android:textSize="18sp"
+				android:visibility="gone" />
+			
 			<android.support.v7.widget.RecyclerView
 				android:id="@+id/activity_chat_list_recycler_list"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"
-				android:visibility="visible" />
+				android:visibility="visible"
+				tools:visibility="visible" />
 		</LinearLayout>
 		
 		<LinearLayout
@@ -73,12 +99,7 @@
 				android:tint="@color/dark_grey" />
 		
 		</LinearLayout>
-		
-		<WebView
-			android:id="@+id/activity_chat_list_web_view"
-			android:layout_width="match_parent"
-			android:layout_height="match_parent"
-			android:visibility="gone" />
+	
 	</LinearLayout>
 	
 	<RelativeLayout
@@ -87,7 +108,7 @@
 		android:layout_height="match_parent"
 		android:background="#9e000000"
 		android:visibility="gone"
-		tools:visibility="visible">
+		tools:visibility="gone">
 		
 		<Button
 			android:id="@+id/activity_chat_list_button_hint_ok"
@@ -98,7 +119,7 @@
 			android:layout_alignParentEnd="true"
 			android:layout_margin="@dimen/small_margin"
 			android:text="@string/ok" />
-
+		
 		<ImageView
 			android:id="@+id/activity_chat_list_image_view_arrow"
 			android:layout_width="wrap_content"
@@ -109,7 +130,7 @@
 			android:layout_marginEnd="25dp"
 			android:rotation="90"
 			android:src="@drawable/ic_reply_white_36dp" />
-
+		
 		<TextView
 			android:id="@+id/activity_chat_list_text_view_hint"
 			android:layout_width="250dp"

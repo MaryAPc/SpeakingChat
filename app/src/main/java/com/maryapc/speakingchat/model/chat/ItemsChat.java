@@ -35,9 +35,15 @@ public class ItemsChat {
 	public static class Snippet {
 		@SerializedName("textMessageDetails")
 		private TextMessageDetails mTextMessageDetails;
+		@SerializedName("superChatDetails")
+		private SuperChatDetails mSuperChatDetails;
 
 		public TextMessageDetails getTextMessageDetails() {
 			return mTextMessageDetails;
+		}
+
+		public SuperChatDetails getSuperChatDetails() {
+			return mSuperChatDetails;
 		}
 	}
 
@@ -53,6 +59,21 @@ public class ItemsChat {
 
 		public String getDisplayName() {
 			return mDisplayName;
+		}
+	}
+
+	public static class SuperChatDetails {
+		@SerializedName("amountDisplayString")
+		private String mAmountDisplayString;
+		@SerializedName("userComment")
+		private String mUserComment;
+
+		public String getAmountDisplayString() {
+			return mAmountDisplayString;
+		}
+
+		public String getUserComment() {
+			return mUserComment;
 		}
 	}
 }

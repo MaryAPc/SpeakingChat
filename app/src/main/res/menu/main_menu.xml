@@ -2,17 +2,8 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
 	tools:context=".MainActivity">
-
-	<item
-		android:id="@+id/main_menu_preferences"
-		android:title="@string/preferences"
-		app:showAsAction="never" />
 	<item
 		android:id="@+id/main_menu_about"
 		android:title="@string/about_app"
-		app:showAsAction="never" />
-	<item
-		android:id="@+id/main_menu_sign_out"
-		android:title="@string/sign_out"
 		app:showAsAction="never" />
 </menu>

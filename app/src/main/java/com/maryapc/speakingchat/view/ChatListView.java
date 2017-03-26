@@ -36,7 +36,7 @@ public interface ChatListView extends MvpView{
 
 	void startGettingMessages(String nextPageToken);
 
-	void createIntent(Class<?> activity);
+	void addFragment(android.app.Fragment fragment);
 
 	void showProgressBar(boolean visible);
 
@@ -47,4 +47,10 @@ public interface ChatListView extends MvpView{
 	void showTtsDialog();
 
 	void goToMarket(String data);
+
+	void showActivity(Class<?> activity);
+
+	void setProfileData();
+
+	void saveUserData(String photoUrl, String displayName, String email);
 }

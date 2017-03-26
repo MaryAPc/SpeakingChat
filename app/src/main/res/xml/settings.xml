@@ -3,14 +3,19 @@
 	<EditTextPreference
 		android:key="silent_interval"
 		android:title="Интервал"
-		android:summary="Устанавливает паузу между сообщениями"
+		android:summary="@string/setting_name_interval"
 		android:defaultValue="7"
 		android:dialogTitle="@string/settings_dialog_title" />
 
 	<EditTextPreference
 		android:key="silent_interval_small"
-		android:title="Интервал между короткими сообщениями"
+		android:title="@string/setting_name_interval_small"
 		android:summary="Пауза после сообщений до 15 символов"
 		android:defaultValue="2"
 		android:dialogTitle="@string/settings_dialog_title" />
+	
+	<CheckBoxPreference
+		android:key="screen_on"
+		android:title="@string/setting_name_screen_on"
+		android:defaultValue="false"/>
 </PreferenceScreen>

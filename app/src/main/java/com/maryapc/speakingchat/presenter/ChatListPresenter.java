@@ -325,11 +325,14 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		FIRST_CONNECT = true;
 		if (mSubscriptionBroadcast != null) {
 			mSubscriptionBroadcast.unsubscribe();
-		} else if (mSubscriptionNewMessages != null) {
+		}
+		if (mSubscriptionNewMessages != null) {
 			mSubscriptionNewMessages.unsubscribe();
-		} else if (mSubscriptionChat != null) {
+		}
+		if (mSubscriptionChat != null) {
 			mSubscriptionChat.unsubscribe();
 		}
+		getViewState().saveTokens("", "", "");
 	}
 
 	public void setNewInterval(long interval, long smallInterval) {
@@ -339,8 +342,12 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		}
 	}
 
+	public void insertFragment(android.app.Fragment fragment) {
+		getViewState().addFragment(fragment);
+	}
+
 	public void startActivity(Class<?> activity) {
-		getViewState().createIntent(activity);
+		getViewState().showActivity(activity);
 	}
 
 	public void errorDialog(int idTitle, int idMessage, boolean clickListener) {
@@ -368,5 +375,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void goGooglePlay(String data) {
 		getViewState().goToMarket(data);
+	}
+
+	public void setProfileData() {
+		getViewState().setProfileData();
+	}
+
+	public void saveUserData(String photoUrl, String displayName, String email) {
+		getViewState().saveUserData(photoUrl, displayName, email);
 	}
 }

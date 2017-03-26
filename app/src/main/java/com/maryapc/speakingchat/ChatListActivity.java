@@ -15,19 +15,25 @@ import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.OnScrollListener;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -44,12 +50,14 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Scope;
+import com.maryapc.speakingchat.adapter.CircleTransform;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
+import com.maryapc.speakingchat.model.User;
 import com.maryapc.speakingchat.model.chat.ItemsChat;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
-import com.maryapc.speakingchat.utils.ChatPreferences;
 import com.maryapc.speakingchat.utils.SpeakService;
 import com.maryapc.speakingchat.view.ChatListView;
+import com.squareup.picasso.Picasso;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -58,11 +66,10 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
                                                                       ChatListView,
                                                                       ChatListAdapter.OnItemClickListener,
                                                                       TextToSpeech.OnInitListener,
-                                                                      GoogleApiClient.OnConnectionFailedListener {
+                                                                      GoogleApiClient.OnConnectionFailedListener,
+                                                                      NavigationView.OnNavigationItemSelectedListener{
 	@InjectPresenter
 	ChatListPresenter mPresenter;
-	@BindView(R.id.activity_chat_list_button_connect_broadcast)
-	Button mConnectBroadcastButton;
 
 	@BindView(R.id.activity_chat_list_recycler_list)
 	RecyclerView mChatListRecyclerView;
@@ -97,6 +104,22 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@BindView(R.id.activity_chat_list_linear_layout_content)
 	LinearLayout mContentLinearLayout;
 
+	@BindView(R.id.activity_drawer_layout)
+	DrawerLayout mDrawerLayout;
+
+	@BindView(R.id.activity_drawer_navigation_view)
+	NavigationView mNavigationView;
+
+	@BindView(R.id.activity_toolbar)
+	Toolbar mToolbar;
+
+	@BindView(R.id.activity_app_bar_chat_content)
+	View mChatIncludeView;
+
+	private ImageView mAvatarImageView;
+	private TextView mUsernameTextView;
+	private TextView mEmailTextView;
+
 	private static boolean LAST_MESSAGE_DONE = false;
 	private static final int REQUEST_CODE = 1;
 	private static final int RC_GET_AUTH_CODE = 2;
@@ -105,8 +128,12 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	private static final String APP_PREFERENCES = "app_preferences";
 	private static final String PREFERENCES_SILENT = "silent_interval";
 	private static final String PREFERENCES_SILENT_SMALL = "silent_interval_small";
+	private static final String PREFERENCES_SCREEN_ON = "screen_on";
 	private static final String FIRST_LAUNCH = "first_launch";
 	private static final String SIGN_IN = "sign_in";
+	private static final String USER_AVATAR = "user_avatar";
+	private static final String USER_NAME = "user_name";
+	private static final String USER_EMAIL = "user_email";
 	private static final String REFRESH_TOKEN = "refresh_token";
 	private static final String ACCESS_TOKEN = "access_token";
 	private static final String TOKEN_TYPE = "token_type";
@@ -115,20 +142,33 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	private SharedPreferences mDefaultPreferences;
 	private ChatListAdapter mChatListAdapter;
 	private LinearLayoutManager mLayoutManager;
-	private TextToSpeech mTextToSpeech;
+	private static TextToSpeech mTextToSpeech;
 	private GoogleApiClient mGoogleApiClient;
-
+	private AboutAppFragment mAboutAppFragment = AboutAppFragment.newInstance();
+	private User mUser = new User();
 	private boolean isStopScroll;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_chat_list);
+		setContentView(R.layout.activity_drawer);
 		ButterKnife.bind(this);
-		mConnectBroadcastButton.setOnClickListener(this);
+
+		View header = mNavigationView.getHeaderView(0);
+		mAvatarImageView = (ImageView) header.findViewById(R.id.navigation_header_image_view_avatar);
+		mUsernameTextView = (TextView) header.findViewById(R.id.navigation_header_text_view_username);
+		mEmailTextView = (TextView) header.findViewById(R.id.navigation_header_text_view_email);
+
+		setSupportActionBar(mToolbar);
+		ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+				this, mDrawerLayout, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+		mDrawerLayout.setDrawerListener(toggle);
+		toggle.syncState();
+
 		mPlayButton.setOnClickListener(this);
 		mStopButton.setOnClickListener(this);
 		mSignInButton.setOnClickListener(this);
+		mNavigationView.setNavigationItemSelectedListener(this);
 
 		mChatListAdapter = new ChatListAdapter(new ArrayList<>(), this);
 		mLayoutManager = new LinearLayoutManager(this);
@@ -153,6 +193,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		if (mSharedPreferences.getBoolean(SIGN_IN, false)) { //вход выполнен
 			mPresenter.visibleSignIn(true);
 			mPresenter.checkToken();
+			mPresenter.setProfileData();
 		} else { //выполняем вход
 			mPresenter.visibleSignIn(false);
 		}
@@ -163,7 +204,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				super.onScrolled(recyclerView, dx, dy);
 				if (dy < 0) {
 					isStopScroll = true;
-				} else if (dy > 30) {
+				} else if (dy > 70) {
 					isStopScroll = false;
 				}
 			}
@@ -227,13 +268,14 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			if (result.isSuccess()) {
 				GoogleSignInAccount acct = result.getSignInAccount();
 				assert acct != null;
+				mPresenter.saveUserData(String.valueOf(acct.getPhotoUrl()), acct.getDisplayName(), acct.getEmail());
 				String authCode = acct.getServerAuthCode();
-				acct.getIdToken();
 				Log.d(TAG, authCode);
 				mSharedPreferences.edit().putBoolean(SIGN_IN, true).apply();
 				mPresenter.getAccessToken(authCode);
 				mSignInLinearLayout.setVisibility(View.GONE);
 				mContentLinearLayout.setVisibility(View.VISIBLE);
+				mPresenter.setProfileData();
 			} else {
 				mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
 				mPresenter.errorDialog(R.string.error, R.string.error_auth, false);
@@ -250,18 +292,44 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-			case R.id.main_menu_sign_out:
+			case R.id.main_menu_about:
+				mChatIncludeView.setVisibility(View.GONE);
+				mPresenter.insertFragment(mAboutAppFragment);
+				return true;
+			default:
+				return super.onOptionsItemSelected(item);
+		}
+	}
+
+	@Override
+	public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.drawer_menu_connect_broadcast:
+				mChatIncludeView.setVisibility(View.VISIBLE);
+				mDrawerLayout.closeDrawers();
+				mEmptyBroadcastTextView.setVisibility(View.GONE);
+				mPresenter.stopSpeech(mTextToSpeech);
+				mPresenter.unsubscribeAll();
+				mChatListAdapter.clean();
+				mPresenter.checkToken();
+				return true;
+			case R.id.drawer_menu_settings:
+				mPresenter.startActivity(ChatPreferences.class);
+				mDrawerLayout.closeDrawers();
+				mPresenter.stopSpeech(mTextToSpeech);
+				return true;
+			case R.id.drawer_menu_feedback:
+				mDrawerLayout.closeDrawers();
+				mPresenter.goGooglePlay(getString(R.string.uri_speaking_chat));
+				return true;
+			case R.id.drawer_menu_sign_out:
+				mDrawerLayout.closeDrawers();
 				mPresenter.stopSpeech(mTextToSpeech);
 				mSpeechBar.setVisibility(View.GONE);
 				mEmptyBroadcastTextView.setVisibility(View.GONE);
+				mPresenter.saveUserData("", "", "");
+				mPresenter.setProfileData();
 				signOut();
-				return true;
-			case R.id.main_menu_preferences:
-				mPresenter.stopSpeech(mTextToSpeech);
-				mPresenter.startActivity(ChatPreferences.class);
-				return true;
-			case R.id.main_menu_about:
-				mPresenter.startActivity(AboutAppActivity.class);
 				return true;
 			default:
 				return super.onOptionsItemSelected(item);
@@ -283,6 +351,20 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		} finally {
 			mPresenter.setNewInterval(newInterval, newSmallInterval);
 		}
+		if (mDefaultPreferences.getBoolean(PREFERENCES_SCREEN_ON, true)) {
+			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		} else {
+			getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		}
+	}
+
+	@Override
+	public void onBackPressed() {
+		if (!mChatIncludeView.isShown()) {
+			mChatIncludeView.setVisibility(View.VISIBLE);
+		} else {
+			super.onBackPressed();
+		}
 	}
 
 	@Override
@@ -297,13 +379,6 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@Override
 	public void onClick(View v) {
 		switch (v.getId()) {
-			case R.id.activity_chat_list_button_connect_broadcast:
-				mEmptyBroadcastTextView.setVisibility(View.GONE);
-				mPresenter.stopSpeech(mTextToSpeech);
-				mPresenter.unsubscribeAll();
-				mChatListAdapter.clean();
-				mPresenter.checkToken();
-				break;
 			case R.id.activity_chat_list_button_stop:
 				mPresenter.stopSpeech(mTextToSpeech);
 				break;
@@ -421,9 +496,11 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
-	public void createIntent(Class<?> activity) {
-		Intent intent = new Intent(this, activity);
-		startActivity(intent);
+	public void addFragment(android.app.Fragment fragment) {
+		getFragmentManager()
+				.beginTransaction()
+				.replace(R.id.activity_app_bar_frame_layout_container, fragment)
+				.commit();
 	}
 
 	@Override
@@ -486,6 +563,40 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			}
 		}
 		startActivityForResult(intent, REQUEST_CODE);
+	}
+
+	@Override
+	public void showActivity(Class<?> activity) {
+		Intent intent = new Intent(ChatListActivity.this, activity);
+		startActivity(intent);
+	}
+
+	@Override
+	public void setProfileData() {
+		mUser.setAvatar(mSharedPreferences.getString(USER_AVATAR, ""));
+		mUser.setEmail(mSharedPreferences.getString(USER_EMAIL, ""));
+		mUser.setUsername(mSharedPreferences.getString(USER_NAME, ""));
+
+		if (mUser.getAvatar().equals("")) {
+			mAvatarImageView.setVisibility(View.INVISIBLE);
+		} else {
+			mAvatarImageView.setVisibility(View.VISIBLE);
+			Picasso.with(MyApplication.getInstance())
+					.load(mUser.getAvatar())
+					.transform(new CircleTransform())
+					.into(mAvatarImageView);
+		}
+		mUsernameTextView.setText(mUser.getUsername());
+		mEmailTextView.setText(mUser.getEmail());
+	}
+
+	@Override
+	public void saveUserData(String photoUrl, String displayName, String email) {
+		mSharedPreferences.edit()
+				.putString(USER_AVATAR, photoUrl)
+				.putString(USER_NAME, displayName)
+				.putString(USER_EMAIL, email)
+				.apply();
 	}
 
 	@Override

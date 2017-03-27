@@ -46,11 +46,15 @@ public interface ChatListView extends MvpView{
 
 	void showTtsDialog();
 
-	void goToMarket(String data);
+	void goToMarket(String data, boolean forResult);
 
 	void showActivity(Class<?> activity);
 
 	void setProfileData();
 
 	void saveUserData(String photoUrl, String displayName, String email);
+
+	void startSignInActivity();
+
+	void signOut();
 }

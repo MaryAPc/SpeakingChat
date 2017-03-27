@@ -7,6 +7,8 @@
 
 	<string name="android_client_id">id</string>
 	<string name="server_client_id">id</string>
+	<string name="client_secret">id</string>
+	
 	<string name="connect_to_broadcast_info">"Connecting to stream: %s"</string>
 	<string name="sign_out">Sign out</string>
 	<string name="preferences">Settings</string>
@@ -43,4 +45,5 @@
 	<string name="setting_name_interval">Sets a pause between messages</string>
 	<string name="setting_name_interval_small">The interval between short messages</string>
 	<string name="setting_name_screen_on">Don\'t off a screen</string>
+	<string name="check_settings_broadcast">Check your broadcast settings</string>
 </resources>

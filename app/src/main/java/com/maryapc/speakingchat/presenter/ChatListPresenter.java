@@ -108,7 +108,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			public void onResponse(Response response) throws IOException {
 				try {
 					JSONObject jsonObject = new JSONObject(response.body().string());
-					final String message = jsonObject.toString(3);
+					final String message = jsonObject.toString();
+					if (BuildConfig.DEBUG) Log.d("tag", message + "new token");
 					mAccessToken = jsonObject.get("access_token").toString();
 					mTokenType = jsonObject.get("token_type").toString();
 					getViewState().saveAccessToken(mAccessToken);
@@ -118,7 +119,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					} else {
 						getViewState().startGettingMessages(mNextPageToken);
 					}
-					if (BuildConfig.DEBUG) Log.d("tag", message + "new token");
+
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -131,7 +132,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		RequestBody requestBody = new FormEncodingBuilder()
 				.add("grant_type", "authorization_code")
 				.add("client_id", MyApplication.getInstance().getString(R.string.server_client_id))
-				.add("client_secret", "ppIohjp0kMQUbOVWXPkHAkaf")
+				.add("client_secret", MyApplication.getInstance().getString(R.string.client_secret))
 				.add("redirect_uri", "urn:ietf:wg:oauth:2.0:oob")
 				.add("code", authCode)
 				.build();
@@ -151,12 +152,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 				try {
 					JSONObject jsonObject = new JSONObject(response.body().string());
 					final String message = jsonObject.toString();
+					if (BuildConfig.DEBUG) Log.d("tag", message);
 					mAccessToken = jsonObject.get("access_token").toString();
 					mTokenType = jsonObject.get("token_type").toString();
 					mRefreshToken = jsonObject.get("refresh_token").toString();
 					getViewState().saveTokens(mRefreshToken, mAccessToken, mTokenType);
+					FIRST_CONNECT = true;
 					getViewState().startLifeBroadcast();
-					if (BuildConfig.DEBUG) Log.d("tag", message);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -189,7 +191,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					@Override
 					public void onError(Throwable e) {
 						if (BuildConfig.DEBUG) Log.d("presenter", "Error getLifeBroadcast");
-						handleError(e);
+						if (e instanceof HttpException) {
+							HttpException exception = (HttpException) e;
+							if (exception.code() == 403) {
+								getViewState().showErrorDialog(R.string.error, R.string.check_settings_broadcast, false);
+								getViewState().showProgressBar(false);
+							}
+						}
 					}
 
 					@Override
@@ -223,7 +231,6 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 					@Override
 					public void onError(Throwable e) {
-						handleError(e);
 						if (BuildConfig.DEBUG) Log.d("presenter", "Error getLifeChat");
 					}
 
@@ -274,9 +281,12 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			switch (((HttpException) e).code()) {
 				case 403:
 					if (BuildConfig.DEBUG) Log.d("presenter", "Error 403");
+					mSubscriptionChat.unsubscribe();
+					mSubscriptionNewMessages.unsubscribe();
 					getViewState().startLifeChat(mLifeChatId);
 					break;
 				case 401:
+					mSubscriptionNewMessages.unsubscribe();
 					getNewAccessToken(false);
 					if (BuildConfig.DEBUG) Log.d("presenter", "Error 401");
 					break;
@@ -285,8 +295,10 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 			}
 			if (BuildConfig.DEBUG) Log.d("presenter", "Error getNextChatMessages");
 		} else if (e instanceof UnknownHostException) {
+			mSubscriptionNewMessages.unsubscribe();
 			getViewState().startGettingMessages(mNextPageToken);
 		} else if (e instanceof SocketTimeoutException) {
+			mSubscriptionNewMessages.unsubscribe();
 			getViewState().startGettingMessages(mNextPageToken);
 		}
 	}
@@ -332,7 +344,6 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		if (mSubscriptionChat != null) {
 			mSubscriptionChat.unsubscribe();
 		}
-		getViewState().saveTokens("", "", "");
 	}
 
 	public void setNewInterval(long interval, long smallInterval) {
@@ -373,8 +384,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		getViewState().showTtsDialog();
 	}
 
-	public void goGooglePlay(String data) {
-		getViewState().goToMarket(data);
+	public void goGooglePlay(String data, boolean forResult) {
+		getViewState().goToMarket(data, forResult);
 	}
 
 	public void setProfileData() {
@@ -383,5 +394,13 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void saveUserData(String photoUrl, String displayName, String email) {
 		getViewState().saveUserData(photoUrl, displayName, email);
+	}
+
+	public void getAuthCode() {
+		getViewState().startSignInActivity();
+	}
+
+	public void signOut() {
+		getViewState().signOut();
 	}
 }

@@ -8,6 +8,8 @@
 	
 	<string name="android_client_id">id</string>
 	<string name="server_client_id">id</string>
+	<string name="client_secret">id</string>
+	
 	<string name="connect_to_broadcast_info">"Подключение к трансляции: %s"</string>
 	<string name="sign_out">Выйти</string>
 	<string name="preferences">Настройки</string>
@@ -44,4 +46,5 @@
 	<string name="setting_name_interval">Устанавливает паузу между сообщениями</string>
 	<string name="setting_name_interval_small">Интервал между короткими сообщениями</string>
 	<string name="setting_name_screen_on">Не выключать экран</string>
+	<string name="check_settings_broadcast">Проверьте настройки трансляции</string>
 </resources>

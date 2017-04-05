@@ -6,9 +6,8 @@
 	<string name="connect_to_broadcast">Подключиться к трансляции</string>
 	<string name="error_connect">Ошибка подключения</string>
 	
-	<string name="android_client_id">id</string>
 	<string name="server_client_id">id</string>
-	<string name="client_secret">id</string>
+	<string name="client_secret">sec</string>
 	
 	<string name="connect_to_broadcast_info">"Подключение к трансляции: %s"</string>
 	<string name="sign_out">Выйти</string>

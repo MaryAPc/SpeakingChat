@@ -46,7 +46,7 @@ public interface ChatListView extends MvpView{
 
 	void showTtsDialog();
 
-	void goToMarket(String data, boolean forResult);
+	void goToMarket(String data, boolean forResult, int requestCode);
 
 	void showActivity(Class<?> activity);
 

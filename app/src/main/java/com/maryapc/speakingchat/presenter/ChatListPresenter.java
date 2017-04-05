@@ -90,7 +90,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		RequestBody requestBody = new FormEncodingBuilder()
 				.add("refresh_token", mRefreshToken)
 				.add("client_id", MyApplication.getInstance().getString(R.string.server_client_id))
-				.add("client_secret", "ppIohjp0kMQUbOVWXPkHAkaf")
+				.add("client_secret", MyApplication.getInstance().getString(R.string.client_secret))
 				.add("grant_type", "refresh_token")
 				.build();
 		final Request request = new Request.Builder()
@@ -133,7 +133,6 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 				.add("grant_type", "authorization_code")
 				.add("client_id", MyApplication.getInstance().getString(R.string.server_client_id))
 				.add("client_secret", MyApplication.getInstance().getString(R.string.client_secret))
-				.add("redirect_uri", "urn:ietf:wg:oauth:2.0:oob")
 				.add("code", authCode)
 				.build();
 		final Request request = new Request.Builder()
@@ -384,8 +383,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 		getViewState().showTtsDialog();
 	}
 
-	public void goGooglePlay(String data, boolean forResult) {
-		getViewState().goToMarket(data, forResult);
+	public void goGooglePlay(String data, boolean forResult, int requestCode) {
+		getViewState().goToMarket(data, forResult, requestCode);
 	}
 
 	public void setProfileData() {

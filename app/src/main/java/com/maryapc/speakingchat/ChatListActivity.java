@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ResolveInfo;
+import android.databinding.DataBindingUtil;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -50,14 +51,14 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Scope;
-import com.maryapc.speakingchat.adapter.CircleTransform;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
+import com.maryapc.speakingchat.databinding.ActivityDrawerBinding;
+import com.maryapc.speakingchat.databinding.NavigationHeaderBinding;
 import com.maryapc.speakingchat.model.User;
 import com.maryapc.speakingchat.model.chat.ItemsChat;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
 import com.maryapc.speakingchat.utils.SpeakService;
 import com.maryapc.speakingchat.view.ChatListView;
-import com.squareup.picasso.Picasso;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -146,19 +147,17 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	private static TextToSpeech mTextToSpeech;
 	private GoogleApiClient mGoogleApiClient;
 	private AboutAppFragment mAboutAppFragment = AboutAppFragment.newInstance();
-	private User mUser = new User();
 	private boolean isStopScroll;
+	private ActivityDrawerBinding mBinding;
+	private NavigationHeaderBinding mHeaderBinding;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_drawer);
+		mBinding = DataBindingUtil.setContentView(this, R.layout.activity_drawer);
 		ButterKnife.bind(this);
-
-		View header = mNavigationView.getHeaderView(0);
-		mAvatarImageView = (ImageView) header.findViewById(R.id.navigation_header_image_view_avatar);
-		mUsernameTextView = (TextView) header.findViewById(R.id.navigation_header_text_view_username);
-		mEmailTextView = (TextView) header.findViewById(R.id.navigation_header_text_view_email);
+		mHeaderBinding = DataBindingUtil.inflate(getLayoutInflater(), R.layout.navigation_header, mBinding.activityDrawerNavigationView, false);
+		mBinding.activityDrawerNavigationView.addHeaderView(mHeaderBinding.getRoot());
 
 		setSupportActionBar(mToolbar);
 		ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -234,9 +233,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	private void prepareGoogleClient() {
 		String serverClientId = getString(R.string.server_client_id);
 		GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-				.requestServerAuthCode(serverClientId, true)
-				.requestEmail()
 				.requestScopes(new Scope("https://www.googleapis.com/auth/youtube.readonly"))
+				.requestServerAuthCode(serverClientId)
+				.requestEmail()
 				.build();
 
 		mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -254,11 +253,12 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void signOut() {
-		Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback(status ->
-				Auth.GoogleSignInApi.revokeAccess(mGoogleApiClient).setResultCallback(statusRevoke -> {
+		Auth.GoogleSignInApi.revokeAccess(mGoogleApiClient).setResultCallback(
+				status -> {
+					Auth.GoogleSignInApi.signOut(mGoogleApiClient);
 					mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
 					mPresenter.visibleSignIn(false);
-				}));
+				});
 	}
 
 	@Override
@@ -272,7 +272,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				assert acct != null;
 				mPresenter.saveUserData(String.valueOf(acct.getPhotoUrl()), acct.getDisplayName(), acct.getEmail());
 				String authCode = acct.getServerAuthCode();
-				if (BuildConfig.DEBUG) Log.d(TAG, authCode);
+				if (BuildConfig.DEBUG) {
+					Log.d(TAG, authCode);
+				}
 				mSharedPreferences.edit().putBoolean(SIGN_IN, true).apply();
 				mPresenter.getAccessToken(authCode);
 				mSignInLinearLayout.setVisibility(View.GONE);
@@ -319,7 +321,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				return true;
 			case R.id.drawer_menu_feedback:
 				mDrawerLayout.closeDrawers();
-				mPresenter.goGooglePlay(getString(R.string.uri_speaking_chat), false);
+				mPresenter.goGooglePlay(getString(R.string.uri_speaking_chat), false, 0);
 				return true;
 			case R.id.drawer_menu_sign_out:
 				mDrawerLayout.closeDrawers();
@@ -537,7 +539,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle(R.string.attention)
 				.setMessage(R.string.tts_no_install_message)
-				.setPositiveButton(R.string.install, (dialogInterface, i) -> mPresenter.goGooglePlay(getString(R.string.uri_tts), true))
+				.setPositiveButton(R.string.install, (dialogInterface, i) -> mPresenter.goGooglePlay(getString(R.string.uri_tts), true, TTS_REQUEST_CODE))
 				.setNegativeButton(R.string.cansel, (dialogInterface, i) ->
 						Toast.makeText(MyApplication.getInstance(), R.string.speech_imposible, Toast.LENGTH_LONG).show());
 		AlertDialog dialog = builder.create();
@@ -545,7 +547,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	}
 
 	@Override
-	public void goToMarket(String data, boolean forResult) {
+	public void goToMarket(String data, boolean forResult, int requestCode) {
 		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(data));
 		List<ResolveInfo> resInfo = getPackageManager().queryIntentActivities(intent, 0);
 		if (resInfo.isEmpty()) {
@@ -561,7 +563,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			}
 		}
 		if (forResult) {
-			startActivityForResult(intent, RC_GET_AUTH_CODE);
+			startActivityForResult(intent, requestCode);
 		} else {
 			startActivity(intent);
 		}
@@ -575,21 +577,10 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void setProfileData() {
-		mUser.setAvatar(mSharedPreferences.getString(USER_AVATAR, ""));
-		mUser.setEmail(mSharedPreferences.getString(USER_EMAIL, ""));
-		mUser.setUsername(mSharedPreferences.getString(USER_NAME, ""));
-
-		if (mUser.getAvatar().equals("")) {
-			mAvatarImageView.setVisibility(View.INVISIBLE);
-		} else {
-			mAvatarImageView.setVisibility(View.VISIBLE);
-			Picasso.with(MyApplication.getInstance())
-					.load(mUser.getAvatar())
-					.transform(new CircleTransform())
-					.into(mAvatarImageView);
-		}
-		mUsernameTextView.setText(mUser.getUsername());
-		mEmailTextView.setText(mUser.getEmail());
+		User user = new User(mSharedPreferences.getString(USER_AVATAR, ""),
+				mSharedPreferences.getString(USER_NAME, ""),
+				mSharedPreferences.getString(USER_EMAIL, ""));
+		mHeaderBinding.setUser(user);
 	}
 
 	@Override
@@ -619,10 +610,14 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			Locale locale = new Locale("ru");
 			int result = mTextToSpeech.setLanguage(locale);
 			if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-				if (BuildConfig.DEBUG) Log.e("TTS", "Язык не поддерживается");
+				if (BuildConfig.DEBUG) {
+					Log.e("TTS", "Язык не поддерживается");
+				}
 			}
 		} else {
-			if (BuildConfig.DEBUG) Log.e("TTS", "Ошибка");
+			if (BuildConfig.DEBUG) {
+				Log.e("TTS", "Ошибка");
+			}
 			mPresenter.ttsErrorDialog();
 		}
 	}

@@ -1,34 +1,32 @@
 package com.maryapc.speakingchat.model;
 
-public class User {
+import android.databinding.BaseObservable;
+import android.databinding.Bindable;
+
+public class User extends BaseObservable {
 
 	private String mAvatar;
 	private String mUsername;
 	private String mEmail;
 
+	public User(String avatar, String username, String email) {
+		mAvatar = avatar;
+		mUsername = username;
+		mEmail = email;
+	}
+
+	@Bindable
 	public String getEmail() {
 		return mEmail;
 	}
 
-	public void setEmail(String email) {
-		mEmail = email;
-	}
-
+	@Bindable
 	public String getUsername() {
-
 		return mUsername;
 	}
 
-	public void setUsername(String username) {
-		mUsername = username;
-	}
-
+	@Bindable
 	public String getAvatar() {
-
 		return mAvatar;
-	}
-
-	public void setAvatar(String avatar) {
-		mAvatar = avatar;
 	}
 }

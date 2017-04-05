@@ -1,32 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
-	android:layout_width="match_parent"
-	android:layout_height="192dp"
-	android:background="@drawable/header"
-	android:gravity="bottom"
-	android:orientation="vertical"
-	android:padding="16dp"
-	android:theme="@style/ThemeOverlay.AppCompat.Dark">
+	tools:context="com.maryapc.speakingchat.ChatListActivity">
+	<data>
+		<import type="android.view.View" alias="view"/>
+		<variable
+			name="user"
+			type="com.maryapc.speakingchat.model.User" />
+	</data>
 	
-	<ImageView
-		android:id="@+id/navigation_header_image_view_avatar"
-		android:layout_width="70dp"
-		android:layout_height="70dp"
-		android:layout_marginBottom="@dimen/activity_vertical_margin"
-		tools:src="@android:drawable/sym_def_app_icon" />
-	
-	<TextView
-		android:id="@+id/navigation_header_text_view_username"
+	<LinearLayout
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-		tools:text="User Username" />
+		android:layout_height="192dp"
+		android:background="@drawable/header"
+		android:gravity="bottom"
+		android:orientation="vertical"
+		android:padding="16dp"
+		android:theme="@style/ThemeOverlay.AppCompat.Dark">
+		
+		<ImageView
+			android:id="@+id/navigation_header_image_view_avatar"
+			android:layout_width="70dp"
+			android:layout_height="70dp"
+			android:layout_marginBottom="@dimen/activity_vertical_margin"
+			android:visibility="@{user.avatar.equals(``) ? view.INVISIBLE : view.VISIBLE}"
+			android:src="@{user.avatar}"
+			tools:src="@android:drawable/sym_def_app_icon" />
+		
+		<TextView
+			android:id="@+id/navigation_header_text_view_username"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+			android:text="@{user.username}"
+			tools:text="User Username" />
+		
+		<TextView
+			android:id="@+id/navigation_header_text_view_email"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@{user.email}"
+			tools:text="email@gmail.com" />
 	
-	<TextView
-		android:id="@+id/navigation_header_text_view_email"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		tools:text="email@gmail.com" />
-
-</LinearLayout>
+	</LinearLayout>
+</layout>

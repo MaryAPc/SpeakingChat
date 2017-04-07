@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -34,7 +33,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -57,8 +55,11 @@ import com.maryapc.speakingchat.databinding.NavigationHeaderBinding;
 import com.maryapc.speakingchat.model.User;
 import com.maryapc.speakingchat.model.chat.ItemsChat;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
-import com.maryapc.speakingchat.utils.SpeakService;
+import com.maryapc.speakingchat.utils.AppPreferences;
+import com.maryapc.speakingchat.utils.SpeakManager;
 import com.maryapc.speakingchat.view.ChatListView;
+
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -71,6 +72,9 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
                                                                       NavigationView.OnNavigationItemSelectedListener {
 	@InjectPresenter
 	ChatListPresenter mPresenter;
+
+	@Inject
+	AppPreferences mAppPreferences;
 
 	@BindView(R.id.activity_chat_list_recycler_list)
 	RecyclerView mChatListRecyclerView;
@@ -117,52 +121,39 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 	@BindView(R.id.activity_app_bar_chat_content)
 	View mChatIncludeView;
 
-	private ImageView mAvatarImageView;
-	private TextView mUsernameTextView;
-	private TextView mEmailTextView;
-
-	private static boolean LAST_MESSAGE_DONE = false;
 	private static final int TTS_REQUEST_CODE = 11;
 	private static final int RC_GET_AUTH_CODE = 22;
 	private static final String TAG = "ChatListActivity";
 	private static final String GOOGLE_PLAY_PACKAGE = "com.android.vending";
-	private static final String APP_PREFERENCES = "app_preferences";
 	private static final String PREFERENCES_SILENT = "silent_interval";
 	private static final String PREFERENCES_SILENT_SMALL = "silent_interval_small";
 	private static final String PREFERENCES_SCREEN_ON = "screen_on";
-	private static final String FIRST_LAUNCH = "first_launch";
-	private static final String UPDATE_SIGN = "update_sign";
-	private static final String SIGN_IN = "sign_in";
-	private static final String USER_AVATAR = "user_avatar";
-	private static final String USER_NAME = "user_name";
-	private static final String USER_EMAIL = "user_email";
-	private static final String REFRESH_TOKEN = "refresh_token";
-	private static final String ACCESS_TOKEN = "access_token";
-	private static final String TOKEN_TYPE = "token_type";
 
-	private SharedPreferences mSharedPreferences;
+	private static boolean isStopScroll;
+	private static boolean sLastMessageDone = false;
 	private SharedPreferences mDefaultPreferences;
 	private ChatListAdapter mChatListAdapter;
 	private LinearLayoutManager mLayoutManager;
-	private static TextToSpeech mTextToSpeech;
 	private GoogleApiClient mGoogleApiClient;
-	private AboutAppFragment mAboutAppFragment = AboutAppFragment.newInstance();
-	private boolean isStopScroll;
-	private ActivityDrawerBinding mBinding;
 	private NavigationHeaderBinding mHeaderBinding;
+	private static TextToSpeech mTextToSpeech;
+	private AboutAppFragment mAboutAppFragment = AboutAppFragment.newInstance();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		mBinding = DataBindingUtil.setContentView(this, R.layout.activity_drawer);
+
+		ActivityDrawerBinding binding = DataBindingUtil.setContentView(this, R.layout.activity_drawer);
 		ButterKnife.bind(this);
-		mHeaderBinding = DataBindingUtil.inflate(getLayoutInflater(), R.layout.navigation_header, mBinding.activityDrawerNavigationView, false);
-		mBinding.activityDrawerNavigationView.addHeaderView(mHeaderBinding.getRoot());
+		mHeaderBinding = DataBindingUtil.inflate(getLayoutInflater(), R.layout.navigation_header, binding.activityDrawerNavigationView, false);
+		binding.activityDrawerNavigationView.addHeaderView(mHeaderBinding.getRoot());
 
 		setSupportActionBar(mToolbar);
 		ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
 		mDrawerLayout.setDrawerListener(toggle);
 		toggle.syncState();
+
+		MyApplication.getAppComponent().inject(this);
 
 		mPlayButton.setOnClickListener(this);
 		mStopButton.setOnClickListener(this);
@@ -178,21 +169,20 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		mChatListRecyclerView.setLayoutManager(mLayoutManager);
 		mChatListRecyclerView.setAdapter(mChatListAdapter);
 
-		mSharedPreferences = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
 		mDefaultPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-		if (!mSharedPreferences.getBoolean(UPDATE_SIGN, false)) {
-			mSharedPreferences.edit().clear().putBoolean(UPDATE_SIGN, true).apply();
+		if (!mAppPreferences.isUpdateSignIn()) {
+			mAppPreferences.setUpdateSignIn(true);
 		}
-		ChatListPresenter.mRefreshToken = mSharedPreferences.getString(REFRESH_TOKEN, "");
-		ChatListPresenter.mAccessToken = mSharedPreferences.getString(ACCESS_TOKEN, "");
-		ChatListPresenter.mTokenType = mSharedPreferences.getString(TOKEN_TYPE, "");
+		ChatListPresenter.mRefreshToken = mAppPreferences.getRefreshToken();
+		ChatListPresenter.mAccessToken = mAppPreferences.getAccessToken();
+		ChatListPresenter.mTokenType = mAppPreferences.getTokenType();
 
-		SpeakService.mStatus = SpeakService.SpeechStatus.NOT_SPEAK;
+		SpeakManager.mStatus = SpeakManager.SpeechStatus.NOT_SPEAK;
 
 		prepareGoogleClient();
 
-		if (mSharedPreferences.getBoolean(SIGN_IN, false)) { //вход выполнен
+		if (mAppPreferences.isSignIn()) { //вход выполнен
 			mPresenter.visibleSignIn(true);
 			mPresenter.checkToken();
 			mPresenter.setProfileData();
@@ -221,7 +211,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 			@Override
 			public void onDone(String s) {
-				LAST_MESSAGE_DONE = s.equals("speech_id_silent" + ChatListPresenter.mLastPlayPosition);
+				sLastMessageDone = s.equals("speech_id_silent" + ChatListPresenter.mLastPlayPosition);
 			}
 
 			@Override
@@ -256,7 +246,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		Auth.GoogleSignInApi.revokeAccess(mGoogleApiClient).setResultCallback(
 				status -> {
 					Auth.GoogleSignInApi.signOut(mGoogleApiClient);
-					mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
+					mAppPreferences.setSignIn(false);
 					mPresenter.visibleSignIn(false);
 				});
 	}
@@ -275,13 +265,13 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				if (BuildConfig.DEBUG) {
 					Log.d(TAG, authCode);
 				}
-				mSharedPreferences.edit().putBoolean(SIGN_IN, true).apply();
+				mAppPreferences.setSignIn(true);
 				mPresenter.getAccessToken(authCode);
 				mSignInLinearLayout.setVisibility(View.GONE);
 				mContentLinearLayout.setVisibility(View.VISIBLE);
 				mPresenter.setProfileData();
 			} else {
-				mSharedPreferences.edit().putBoolean(SIGN_IN, false).apply();
+				mAppPreferences.setSignIn(false);
 				mPresenter.errorDialog(R.string.error, R.string.error_auth, false);
 			}
 		}
@@ -383,7 +373,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 				mPresenter.stopSpeech(mTextToSpeech);
 				break;
 			case R.id.activity_chat_list_button_play:
-				SpeakService.mStatus = SpeakService.SpeechStatus.SPEAK;
+				SpeakManager.mStatus = SpeakManager.SpeechStatus.SPEAK;
 				mPresenter.speech(mTextToSpeech, ChatListPresenter.mSpeakMessage, mChatListAdapter);
 				break;
 			case R.id.activity_chat_list_button_sign_in:
@@ -411,18 +401,14 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void saveTokens(String refreshToken, String accessToken, String tokenType) {
-		mSharedPreferences.edit()
-				.putString(REFRESH_TOKEN, refreshToken)
-				.putString(ACCESS_TOKEN, accessToken)
-				.putString(TOKEN_TYPE, tokenType)
-				.apply();
+		mAppPreferences.saveRefreshToken(refreshToken);
+		mAppPreferences.saveAccessToken(accessToken);
+		mAppPreferences.saveTokenType(tokenType);
 	}
 
 	@Override
 	public void saveAccessToken(String accessToken) {
-		mSharedPreferences.edit()
-				.putString(ACCESS_TOKEN, accessToken)
-				.apply();
+		mAppPreferences.saveAccessToken(accessToken);
 	}
 
 	@Override
@@ -443,7 +429,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 		if (!isStopScroll) {
 			mLayoutManager.scrollToPosition(mChatListAdapter.getItemCount() - 1);
 		}
-		if (items.size() != 0 && LAST_MESSAGE_DONE) {
+		if (items.size() != 0 && sLastMessageDone) {
 			mPresenter.speech(mTextToSpeech, ChatListPresenter.mLastPlayPosition + 1, mChatListAdapter);
 		}
 		mPresenter.getNextChatMessages();
@@ -521,7 +507,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void showHintView() {
-		if (mSharedPreferences.getBoolean(FIRST_LAUNCH, true)) {
+		if (mAppPreferences.isFirstLaunch()) {
 			Animation animFadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
 			mHintRelativeLayout.setVisibility(View.VISIBLE);
 			Animation animFadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
@@ -529,7 +515,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 			mOkHintButton.setOnClickListener(view -> {
 				mHintRelativeLayout.startAnimation(animFadeOut);
 				mHintRelativeLayout.setVisibility(View.GONE);
-				mSharedPreferences.edit().putBoolean(FIRST_LAUNCH, false).apply();
+				mAppPreferences.setFirstLaunch(false);
 			});
 		}
 	}
@@ -577,19 +563,15 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void setProfileData() {
-		User user = new User(mSharedPreferences.getString(USER_AVATAR, ""),
-				mSharedPreferences.getString(USER_NAME, ""),
-				mSharedPreferences.getString(USER_EMAIL, ""));
+		User user = new User(mAppPreferences.getUserAvatar(), mAppPreferences.getUserName(), mAppPreferences.getUserEmail());
 		mHeaderBinding.setUser(user);
 	}
 
 	@Override
 	public void saveUserData(String photoUrl, String displayName, String email) {
-		mSharedPreferences.edit()
-				.putString(USER_AVATAR, photoUrl)
-				.putString(USER_NAME, displayName)
-				.putString(USER_EMAIL, email)
-				.apply();
+		mAppPreferences.saveUserAvatar(photoUrl);
+		mAppPreferences.saveUserName(displayName);
+		mAppPreferences.saveUserEmail(email);
 	}
 
 	@Override
@@ -600,7 +582,7 @@ public class ChatListActivity extends MvpAppCompatActivity implements View.OnCli
 
 	@Override
 	public void onItemClick(View view, int position) {
-		SpeakService.mStatus = SpeakService.SpeechStatus.SPEAK;
+		SpeakManager.mStatus = SpeakManager.SpeechStatus.SPEAK;
 		mPresenter.speech(mTextToSpeech, position, mChatListAdapter);
 	}
 

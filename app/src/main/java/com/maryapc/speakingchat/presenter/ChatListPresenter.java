@@ -23,7 +23,7 @@ import com.maryapc.speakingchat.model.brooadcast.BroadcastResponse;
 import com.maryapc.speakingchat.model.brooadcast.ItemsBroadcast;
 import com.maryapc.speakingchat.model.chat.ChatResponse;
 import com.maryapc.speakingchat.network.RetrofitService;
-import com.maryapc.speakingchat.utils.SpeakService;
+import com.maryapc.speakingchat.utils.SpeakManager;
 import com.maryapc.speakingchat.view.ChatListView;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.FormEncodingBuilder;
@@ -46,7 +46,7 @@ import rx.schedulers.Schedulers;
 @InjectViewState
 public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
-	private static boolean FIRST_CONNECT = true;
+	private static boolean sFirstConnect = true;
 	private static String mNextPageToken = "";
 	private Subscription mSubscriptionBroadcast;
 	private Subscription mSubscriptionChat;
@@ -114,7 +114,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mTokenType = jsonObject.get("token_type").toString();
 					getViewState().saveAccessToken(mAccessToken);
 					if (isNewConnect) {
-						FIRST_CONNECT = true;
+						sFirstConnect = true;
 						getViewState().startLifeBroadcast();
 					} else {
 						getViewState().startGettingMessages(mNextPageToken);
@@ -156,7 +156,7 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					mTokenType = jsonObject.get("token_type").toString();
 					mRefreshToken = jsonObject.get("refresh_token").toString();
 					getViewState().saveTokens(mRefreshToken, mAccessToken, mTokenType);
-					FIRST_CONNECT = true;
+					sFirstConnect = true;
 					getViewState().startLifeBroadcast();
 				} catch (JSONException e) {
 					e.printStackTrace();
@@ -178,8 +178,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 					@Override
 					public void onCompleted() {
 						if (!isEmptyBroadcast) {
-							if (FIRST_CONNECT) {
-								FIRST_CONNECT = false;
+							if (sFirstConnect) {
+								sFirstConnect = false;
 								getViewState().showConnectInfo(titleBroadcast);
 							}
 							getViewState().showSpeechBar();
@@ -316,24 +316,24 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void speech(TextToSpeech textToSpeech, int position, ChatListAdapter adapter) {
 		textToSpeech.stop();
-		if (SpeakService.mStatus == SpeakService.SpeechStatus.SPEAK) {
+		if (SpeakManager.mStatus == SpeakManager.SpeechStatus.SPEAK) {
 			if (adapter.getItemCount() != 0) {
 				getViewState().enableButton(R.id.activity_chat_list_button_stop);
 				getViewState().switchOfButton(R.id.activity_chat_list_button_play);
-				SpeakService.speechMessages(textToSpeech, position, adapter);
+				SpeakManager.speechMessages(textToSpeech, position, adapter);
 			}
 		}
 	}
 
 	public void stopSpeech(TextToSpeech textToSpeech) {
-		SpeakService.mStatus = SpeakService.SpeechStatus.NOT_SPEAK;
-		SpeakService.stopSpeech(textToSpeech);
+		SpeakManager.mStatus = SpeakManager.SpeechStatus.NOT_SPEAK;
+		SpeakManager.stopSpeech(textToSpeech);
 		getViewState().switchOfButton(R.id.activity_chat_list_button_stop);
 		getViewState().enableButton(R.id.activity_chat_list_button_play);
 	}
 
 	public void unsubscribeAll() {
-		FIRST_CONNECT = true;
+		sFirstConnect = true;
 		if (mSubscriptionBroadcast != null) {
 			mSubscriptionBroadcast.unsubscribe();
 		}
@@ -347,8 +347,8 @@ public class ChatListPresenter extends MvpPresenter<ChatListView> {
 
 	public void setNewInterval(long interval, long smallInterval) {
 		if (interval != 0) {
-			SpeakService.mInterval = interval;
-			SpeakService.mSmallInterval = smallInterval;
+			SpeakManager.mInterval = interval;
+			SpeakManager.mSmallInterval = smallInterval;
 		}
 	}
 

@@ -5,7 +5,7 @@ import android.speech.tts.TextToSpeech;
 import com.maryapc.speakingchat.adapter.recycler.ChatListAdapter;
 import com.maryapc.speakingchat.presenter.ChatListPresenter;
 
-public class SpeakService {
+public class SpeakManager {
 
 	public static SpeechStatus mStatus;
 	public static long mInterval;

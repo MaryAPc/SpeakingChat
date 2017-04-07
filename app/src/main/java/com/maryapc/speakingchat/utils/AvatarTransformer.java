@@ -11,7 +11,7 @@ public class AvatarTransformer {
 
 	@BindingAdapter({"android:src"})
 	public static void transform(ImageView view, String avatarUrl) {
-		if (!avatarUrl.equals("")) {
+		if (avatarUrl != null && !avatarUrl.equals("")) {
 			Picasso.with(MyApplication.getInstance())
 					.load(avatarUrl)
 					.transform(new CircleTransform())

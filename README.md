@@ -1,6 +1,6 @@
 # SpeakingChat
-Приложение для голосового воспроизведения сообщений со стрима Youtube
+App for voice playback messages from Youtube broadcast.
 
-Доступно в Google Play: https://play.google.com/store/apps/details?id=com.maryapc.speakingchat
+In Google Play: https://play.google.com/store/apps/details?id=com.maryapc.speakingchat
 
-Статья на Хабрахабре, как выполнена аутентификация в приложении: https://habrahabr.ru/post/325518/
+Article in Habrahabr about authentification in app: https://habrahabr.ru/post/325518/
